@@ -1,549 +1,1211 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#000000">
-<title>粒子場 — RYUSHI FIELD / overlay</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1b4965">
+<title>電験三種 理論・電子分野 詰め込みノート</title>
 <style>
+:root{
+  --f-sans:"Hiragino Kaku Gothic ProN","Yu Gothic Medium","Yu Gothic","Meiryo","Noto Sans JP",system-ui,sans-serif;
+  --f-mono:ui-monospace,"SFMono-Regular",Consolas,Menlo,"Yu Gothic",monospace;
+
+  --bg:#f2f4f2;
+  --panel:#fbfcfb;
+  --panel-2:#e9ede9;
+  --line:#ccd4cf;
+  --line-2:#a6b3ac;
+  --ink:#16202b;
+  --ink-2:#4e5d67;
+  --ink-3:#7d8a92;
+  --accent:#1b4965;
+  --accent-2:#2e6f96;
+  --accent-soft:rgba(27,73,101,.09);
+  --hot:#c14328;
+  --hot-soft:rgba(193,67,40,.10);
+  --ok:#1f7a52;
+  --ok-soft:rgba(31,122,82,.11);
+  --ng:#b23a26;
+  --ng-soft:rgba(178,58,38,.10);
+  --grid:rgba(27,73,101,.085);
+  --shadow:0 1px 0 rgba(22,32,43,.05),0 2px 10px rgba(22,32,43,.05);
+
+  --sp:clamp(14px,3.4vw,22px);
+  --maxw:720px;
+}
+@media (prefers-color-scheme:dark){
   :root{
-    --ink:#eef3ff; --dim:rgba(238,243,255,.45); --line:rgba(238,243,255,.15);
-    --glow:#9fd0ff; --panel:rgba(6,8,14,.6);
+    --bg:#0d1e2a;--panel:#12293700;--panel:#122937;--panel-2:#173343;
+    --line:#22485e;--line-2:#35697f;
+    --ink:#dfeaf1;--ink-2:#a6bfcd;--ink-3:#74919f;
+    --accent:#7db8dd;--accent-2:#a4cde8;--accent-soft:rgba(125,184,221,.13);
+    --hot:#f08464;--hot-soft:rgba(240,132,100,.14);
+    --ok:#5fc79a;--ok-soft:rgba(95,199,154,.14);
+    --ng:#f08464;--ng-soft:rgba(240,132,100,.14);
+    --grid:rgba(125,184,221,.07);
+    --shadow:0 1px 0 rgba(0,0,0,.2),0 2px 12px rgba(0,0,0,.22);
   }
-  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{margin:0;height:100%;background:#000;overflow:hidden}
-  body{font-family:"Hiragino Sans","Noto Sans JP",system-ui,sans-serif;color:var(--ink);touch-action:manipulation}
-  canvas{display:block;width:100%;height:100%}
+}
+:root[data-theme="dark"]{
+  --bg:#0d1e2a;--panel:#122937;--panel-2:#173343;
+  --line:#22485e;--line-2:#35697f;
+  --ink:#dfeaf1;--ink-2:#a6bfcd;--ink-3:#74919f;
+  --accent:#7db8dd;--accent-2:#a4cde8;--accent-soft:rgba(125,184,221,.13);
+  --hot:#f08464;--hot-soft:rgba(240,132,100,.14);
+  --ok:#5fc79a;--ok-soft:rgba(95,199,154,.14);
+  --ng:#f08464;--ng-soft:rgba(240,132,100,.14);
+  --grid:rgba(125,184,221,.07);
+  --shadow:0 1px 0 rgba(0,0,0,.2),0 2px 12px rgba(0,0,0,.22);
+}
+:root[data-theme="light"]{
+  --bg:#f2f4f2;--panel:#fbfcfb;--panel-2:#e9ede9;
+  --line:#ccd4cf;--line-2:#a6b3ac;
+  --ink:#16202b;--ink-2:#4e5d67;--ink-3:#7d8a92;
+  --accent:#1b4965;--accent-2:#2e6f96;--accent-soft:rgba(27,73,101,.09);
+  --hot:#c14328;--hot-soft:rgba(193,67,40,.10);
+  --ok:#1f7a52;--ok-soft:rgba(31,122,82,.11);
+  --ng:#b23a26;--ng-soft:rgba(178,58,38,.10);
+  --grid:rgba(27,73,101,.085);
+  --shadow:0 1px 0 rgba(22,32,43,.05),0 2px 10px rgba(22,32,43,.05);
+}
 
-  #gate{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;
-    justify-content:center;gap:24px;padding:32px;text-align:center;
-    background:radial-gradient(120% 90% at 50% 38%,#101426 0%,#000 74%)}
-  #gate h1{margin:0;font-size:12px;font-weight:400;letter-spacing:.6em;text-indent:.6em;color:var(--dim)}
-  #gate .jp{margin:0;font-size:32px;font-weight:200;letter-spacing:.34em;text-indent:.34em}
-  #startBtn{appearance:none;border:1px solid var(--line);background:transparent;color:var(--ink);
-    font:inherit;font-size:14px;letter-spacing:.3em;text-indent:.3em;padding:18px 34px;border-radius:999px;
-    cursor:pointer;transition:.3s}
-  #startBtn:hover,#startBtn:focus-visible{border-color:var(--glow);color:var(--glow);
-    box-shadow:0 0 34px -8px var(--glow);outline:none}
-  #gate .note{margin:0;max-width:30em;font-size:11.5px;line-height:2;color:var(--dim)}
-  #status{font-size:11px;letter-spacing:.16em;color:var(--dim);min-height:1.4em}
-  #err{display:none;max-width:30em;font-size:12px;line-height:1.9;border-top:1px solid var(--line);
-    padding-top:16px;color:#ffb0a4}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-sans);
+  font-size:16px;line-height:1.75;-webkit-text-size-adjust:100%;overflow-x:hidden}
+.sheet{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),
+                   linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:26px 26px}
+.wrap{position:relative;z-index:1;max-width:var(--maxw);margin:0 auto;padding:0 var(--sp) 96px}
 
-  #ui{position:fixed;left:0;right:0;bottom:0;z-index:10;
-    padding:12px 16px calc(12px + env(safe-area-inset-bottom));
-    display:none;gap:7px;flex-direction:column;
-    background:linear-gradient(to top,rgba(0,0,0,.78),transparent);transition:opacity .5s}
-  #ui.hidden{opacity:0;pointer-events:none}
-  .row{display:flex;align-items:center;gap:12px}
-  .row label{font-size:10px;letter-spacing:.16em;color:var(--dim);width:3.4em;flex:none}
-  input[type=range]{-webkit-appearance:none;appearance:none;flex:1;height:20px;background:transparent}
-  input[type=range]::-webkit-slider-runnable-track{height:1px;background:var(--line)}
-  input[type=range]::-moz-range-track{height:1px;background:var(--line)}
-  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;margin-top:-6px;
-    border-radius:50%;background:var(--glow);box-shadow:0 0 12px -2px var(--glow)}
-  input[type=range]::-moz-range-thumb{width:13px;height:13px;border:none;border-radius:50%;background:var(--glow)}
-  .btns{display:flex;gap:7px;margin-top:3px}
-  .btns button{flex:1;appearance:none;background:var(--panel);border:1px solid var(--line);color:var(--dim);
-    font:inherit;font-size:10px;letter-spacing:.1em;padding:11px 2px;border-radius:8px;cursor:pointer;
-    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-  .btns button.on{color:#050a14;background:var(--glow);border-color:var(--glow)}
-  .btns button:focus-visible{outline:1px solid var(--glow);outline-offset:2px}
-  #fps{position:fixed;top:calc(10px + env(safe-area-inset-top));right:14px;z-index:10;font-size:10px;
-    letter-spacing:.1em;color:rgba(238,243,255,.35);pointer-events:none}
+a{color:var(--accent);text-underline-offset:3px;text-decoration-thickness:1px}
+:focus-visible{outline:2px solid var(--hot);outline-offset:2px;border-radius:4px}
+button{font:inherit;color:inherit;cursor:pointer}
+code,.mono,.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+h1,h2,h3{text-wrap:balance;margin:0}
+
+/* ---------- top bar ---------- */
+.bar{position:sticky;top:0;z-index:40;background:var(--bg);
+  border-bottom:1px solid var(--line)}
+.bar-in{max-width:var(--maxw);margin:0 auto;padding:9px var(--sp);
+  display:flex;align-items:center;gap:10px}
+.brand{font-size:12px;letter-spacing:.14em;font-weight:700;color:var(--accent);
+  white-space:nowrap}
+.brand small{display:block;font-size:10px;letter-spacing:.1em;color:var(--ink-3);font-weight:600}
+.bar-sp{flex:1}
+.gauge{display:flex;align-items:center;gap:7px;font-family:var(--f-mono);font-size:12px;
+  color:var(--ink-2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.glab{font-family:var(--f-sans);font-size:10px;letter-spacing:.1em;color:var(--ink-3);font-weight:700}
+.gauge-track{width:52px;height:5px;background:var(--panel-2);border-radius:99px;overflow:hidden;
+  border:1px solid var(--line)}
+.gauge-fill{height:100%;width:0;background:var(--ok);transition:width .35s ease}
+.iconbtn{background:var(--panel);border:1px solid var(--line);border-radius:8px;
+  width:34px;height:34px;display:grid;place-items:center;font-size:14px;color:var(--ink-2);
+  flex:none}
+.iconbtn:hover{border-color:var(--line-2)}
+.drillbtn{background:var(--accent);color:var(--bg);border:1px solid var(--accent);
+  border-radius:8px;padding:7px 13px;font-size:13px;font-weight:700;letter-spacing:.04em;
+  white-space:nowrap;flex:none}
+:root[data-theme="dark"] .drillbtn,
+:root:not([data-theme="light"]) .drillbtn{}
+@media (prefers-color-scheme:dark){.drillbtn{color:#0d1e2a}}
+:root[data-theme="dark"] .drillbtn{color:#0d1e2a}
+:root[data-theme="light"] .drillbtn{color:#fbfcfb}
+.drillbtn:hover{background:var(--accent-2);border-color:var(--accent-2)}
+
+/* ---------- chips ---------- */
+.chips{position:sticky;top:53px;z-index:39;background:var(--bg);
+  border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chips-in{max-width:var(--maxw);margin:0 auto;padding:8px var(--sp);
+  display:flex;gap:6px;width:max-content;min-width:100%}
+.chip{background:transparent;border:1px solid var(--line);border-radius:99px;
+  padding:5px 12px;font-size:12.5px;color:var(--ink-2);white-space:nowrap;
+  min-height:32px;display:flex;align-items:center;gap:6px}
+.chip .cn{font-family:var(--f-mono);font-size:10px;color:var(--ink-3)}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--bg);font-weight:700}
+@media (prefers-color-scheme:dark){.chip[aria-pressed="true"]{color:#0d1e2a}}
+:root[data-theme="dark"] .chip[aria-pressed="true"]{color:#0d1e2a}
+:root[data-theme="light"] .chip[aria-pressed="true"]{color:#fbfcfb}
+.chip[aria-pressed="true"] .cn{color:inherit;opacity:.7}
+
+/* ---------- hero ---------- */
+.hero{padding:30px 0 8px}
+.eyebrow{font-family:var(--f-mono);font-size:11px;letter-spacing:.18em;color:var(--hot);
+  text-transform:uppercase;margin-bottom:12px}
+h1{font-size:clamp(25px,6.4vw,36px);line-height:1.3;letter-spacing:-.01em;font-weight:800}
+.lede{color:var(--ink-2);font-size:15px;margin:14px 0 0;max-width:62ch}
+
+/* ---------- seat map ---------- */
+.seat{margin:26px 0 0;border:1px solid var(--line);border-radius:10px;background:var(--panel);
+  box-shadow:var(--shadow);overflow:hidden}
+.seat-h{padding:12px 16px;border-bottom:1px solid var(--line);background:var(--panel-2)}
+.seat-h b{font-size:13.5px;letter-spacing:.02em}
+.seat-h span{display:block;font-size:11.5px;color:var(--ink-3);margin-top:2px}
+.seat-row{display:grid;grid-template-columns:66px 1fr;gap:0;border-top:1px solid var(--line)}
+.seat-row:first-of-type{border-top:0}
+.seat-k{padding:11px 10px 11px 16px;font-family:var(--f-mono);font-size:12.5px;font-weight:700;
+  color:var(--accent);border-right:1px solid var(--line);background:var(--accent-soft);
+  display:flex;align-items:center}
+.seat-v{padding:11px 16px;font-size:13.5px;line-height:1.6}
+.seat-v em{font-style:normal;color:var(--ink-3);font-size:12px;display:block;margin-top:1px}
+.seat-f{padding:10px 16px;font-size:11.5px;color:var(--ink-3);border-top:1px solid var(--line);
+  background:var(--panel-2)}
+
+.note{margin:16px 0 0;padding:12px 14px;border-left:3px solid var(--hot);background:var(--hot-soft);
+  border-radius:0 8px 8px 0;font-size:12.5px;line-height:1.7;color:var(--ink-2)}
+.note b{color:var(--ink)}
+
+.howto{margin:22px 0 0;border:1px solid var(--line);border-radius:10px;background:var(--panel);
+  box-shadow:var(--shadow);padding:15px 16px 16px}
+.howto h3{font-family:var(--f-mono);font-size:11px;letter-spacing:.16em;color:var(--ink-3);
+  margin-bottom:11px}
+.howto ol{margin:0;padding-left:1.35em;display:flex;flex-direction:column;gap:9px}
+.howto li{font-size:13px;line-height:1.75;color:var(--ink-2)}
+.howto li::marker{font-family:var(--f-mono);font-size:11px;color:var(--hot);font-weight:700}
+.howto b{color:var(--ink)}
+.ib{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.08em;font-weight:700;
+  padding:2px 6px;border-radius:4px;border:1px solid currentColor;white-space:nowrap}
+.ib.g{color:var(--hot)}
+.ib.w{color:var(--accent)}
+
+/* ---------- topic ---------- */
+.topic{margin-top:44px;scroll-margin-top:104px}
+.t-head{display:flex;align-items:flex-start;gap:12px;padding-bottom:12px;
+  border-bottom:2px solid var(--ink)}
+.t-no{font-family:var(--f-mono);font-size:26px;font-weight:700;color:var(--hot);
+  line-height:1;padding-top:3px;flex:none}
+.t-tt{flex:1;min-width:0}
+.t-tt h2{font-size:clamp(18px,4.6vw,22px);letter-spacing:-.01em;font-weight:800}
+.t-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px;align-items:center}
+.tag{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.06em;padding:2px 7px;
+  border:1px solid var(--line-2);border-radius:4px;color:var(--ink-2)}
+.tag.pri{border-color:var(--hot);color:var(--hot);background:var(--hot-soft)}
+.cost{display:flex;align-items:center;gap:4px;font-family:var(--f-mono);font-size:10.5px;color:var(--ink-3)}
+.cost i{width:11px;height:5px;background:var(--line-2);border-radius:1px;display:block}
+.cost i.on{background:var(--hot)}
+.t-score{font-family:var(--f-mono);font-size:12px;color:var(--ink-3);flex:none;padding-top:6px;
+  font-variant-numeric:tabular-nums}
+.t-lead{font-size:14px;color:var(--ink-2);margin:14px 0 0}
+
+/* ---------- points ---------- */
+.pts{margin:18px 0 0;border:1px solid var(--line);border-radius:10px;background:var(--panel);
+  box-shadow:var(--shadow);overflow:hidden}
+.pts-h{padding:7px 8px 7px 14px;background:var(--accent);font-size:11px;letter-spacing:.16em;
+  font-weight:700;font-family:var(--f-mono);display:flex;align-items:center;gap:8px;min-height:38px}
+.openall{margin-left:auto;background:transparent;border:1px solid currentColor;
+  color:inherit;border-radius:6px;padding:5px 10px;font-size:11px;font-family:var(--f-sans);
+  font-weight:700;letter-spacing:.02em;white-space:nowrap;min-height:30px;opacity:.82}
+.openall:hover{opacity:1;background:rgba(128,128,128,.22)}
+@media (prefers-color-scheme:dark){.pts-h{color:#0d1e2a}}
+:root[data-theme="dark"] .pts-h{color:#0d1e2a}
+:root[data-theme="light"] .pts-h{color:#fbfcfb}
+.pt{display:grid;grid-template-columns:minmax(88px,26%) 1fr;border-top:1px solid var(--line)}
+.pt:first-of-type{border-top:0}
+.pt-k{padding:10px 8px 10px 14px;font-size:12.5px;font-weight:700;color:var(--accent);
+  line-height:1.5;background:var(--accent-soft);border-right:1px solid var(--line)}
+.pt-v{padding:10px 14px;font-size:13.5px;line-height:1.72}
+.pt-v .f{display:inline-block;font-family:var(--f-mono);font-size:13px;background:var(--panel-2);
+  border:1px solid var(--line);border-radius:4px;padding:0 5px;margin:1px 0;white-space:nowrap}
+.pt-v .hi{background:linear-gradient(transparent 62%,var(--hot-soft) 62%);font-weight:700}
+@media (max-width:430px){
+  .pt{grid-template-columns:1fr}
+  .pt-k{border-right:0;border-bottom:1px solid var(--line);padding:8px 14px 6px}
+}
+
+/* ---------- 「かみくだいて理解する」 ---------- */
+.dig{margin-top:10px;border-top:1px dashed var(--line)}
+.dig summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:7px;
+  padding:9px 0 2px;font-size:12.5px;font-weight:700;color:var(--accent);min-height:38px}
+.dig summary::-webkit-details-marker{display:none}
+.dig summary:hover{color:var(--hot)}
+.dig-i{font-family:var(--f-mono);font-size:12px;width:18px;height:18px;flex:none;
+  display:grid;place-items:center;border:1px solid currentColor;border-radius:4px;line-height:1}
+.dig-i::before{content:"＋"}
+.dig[open] .dig-i::before{content:"−"}
+.dig-b{font-size:13.5px;line-height:1.85;color:var(--ink-2);padding:6px 0 12px}
+.dig-b b{color:var(--ink)}
+.dig-b .f{font-family:var(--f-mono);font-size:13px;background:var(--bg);
+  border:1px solid var(--line);border-radius:4px;padding:0 5px;white-space:nowrap;display:inline-block}
+.dig-b .hi{background:linear-gradient(transparent 62%,var(--hot-soft) 62%);font-weight:700;color:var(--ink)}
+.dig-l{display:flex;flex-direction:column;gap:6px;margin-top:12px;padding-top:11px;
+  border-top:1px solid var(--line)}
+.dig-lt{font-family:var(--f-mono);font-size:10px;letter-spacing:.14em;color:var(--ink-2);font-weight:700}
+.xl{display:flex;align-items:center;gap:9px;text-decoration:none;color:var(--ink);
+  border:1px solid var(--line);border-radius:7px;padding:9px 11px;background:var(--bg);
+  font-size:12.5px;line-height:1.45;min-height:42px}
+.xl:hover{border-color:var(--accent);background:var(--accent-soft)}
+.xl .xb{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.08em;font-weight:700;
+  flex:none;padding:2px 6px;border-radius:4px;border:1px solid currentColor}
+.xl.g .xb{color:var(--hot)}
+.xl.w .xb{color:var(--accent)}
+.xl .ar{margin-left:auto;font-family:var(--f-mono);color:var(--ink-3);flex:none}
+
+/* ---------- questions ---------- */
+.qs-h{display:flex;align-items:center;gap:10px;margin:26px 0 12px}
+.qs-h b{font-family:var(--f-mono);font-size:11px;letter-spacing:.16em;color:var(--ink-3)}
+.qs-h hr{flex:1;border:0;border-top:1px solid var(--line);margin:0}
+
+.q{border:1px solid var(--line);border-radius:10px;background:var(--panel);margin-bottom:12px;
+  box-shadow:var(--shadow);overflow:hidden}
+.q.done{border-color:var(--line-2)}
+.q-top{display:flex;align-items:center;gap:8px;padding:9px 14px;border-bottom:1px dashed var(--line);
+  background:var(--panel-2)}
+.q-no{font-family:var(--f-mono);font-size:11px;font-weight:700;color:var(--accent);flex:none}
+.q-src{font-size:10.5px;color:var(--ink-3);font-family:var(--f-mono);letter-spacing:.02em;
+  margin-left:auto;text-align:right;line-height:1.35}
+.q-body{padding:14px}
+.q-text{margin:0 0 12px;font-size:14.5px;line-height:1.8}
+.q-text .fig{display:block;margin:12px 0;padding:12px 10px;background:var(--panel-2);
+  border:1px solid var(--line);border-radius:6px;color:var(--ink-2);overflow-x:auto}
+.q-text .fig svg{display:block;width:100%;max-width:330px;height:auto;margin:0 auto}
+.opts{display:flex;flex-direction:column;gap:7px}
+.opt{display:flex;gap:10px;align-items:flex-start;text-align:left;width:100%;
+  background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:11px 12px;
+  font-size:14px;line-height:1.65;min-height:46px;transition:border-color .12s,background .12s}
+.opt:hover:not(:disabled){border-color:var(--accent);background:var(--accent-soft)}
+.opt:disabled{cursor:default}
+.opt .k{font-family:var(--f-mono);font-size:12px;font-weight:700;color:var(--ink-3);flex:none;
+  width:17px;padding-top:2px}
+.opt.correct{border-color:var(--ok);background:var(--ok-soft)}
+.opt.correct .k{color:var(--ok)}
+.opt.wrong{border-color:var(--ng);background:var(--ng-soft)}
+.opt.wrong .k{color:var(--ng)}
+.opt.dim{opacity:.5}
+
+.ans{margin-top:13px;border-top:1px solid var(--line);padding-top:13px}
+.verdict{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;margin-bottom:9px}
+.verdict .mk{font-family:var(--f-mono);font-size:11px;padding:2px 8px;border-radius:4px;letter-spacing:.08em}
+.verdict.o .mk{background:var(--ok-soft);color:var(--ok);border:1px solid var(--ok)}
+.verdict.x .mk{background:var(--ng-soft);color:var(--ng);border:1px solid var(--ng)}
+.verdict.o{color:var(--ok)}.verdict.x{color:var(--ng)}
+.exp{font-size:13.5px;line-height:1.8;color:var(--ink-2)}
+.exp b{color:var(--ink)}
+.exp .f{font-family:var(--f-mono);font-size:13px;background:var(--panel-2);border:1px solid var(--line);
+  border-radius:4px;padding:0 5px;white-space:nowrap;display:inline-block}
+.exp .hi{background:linear-gradient(transparent 62%,var(--hot-soft) 62%);font-weight:700;color:var(--ink)}
+.reflink{display:inline-flex;align-items:center;gap:7px;margin-top:11px;font-size:12.5px;
+  font-weight:700;text-decoration:none;border:1px solid var(--line);border-radius:7px;
+  padding:7px 11px;background:var(--bg);min-height:38px}
+.reflink:hover{border-color:var(--accent);background:var(--accent-soft)}
+.reflink .ar{font-family:var(--f-mono);color:var(--ink-3)}
+
+/* ---------- drill ---------- */
+.drill{position:fixed;inset:0;z-index:80;background:var(--bg);display:none;
+  flex-direction:column;overflow-y:auto}
+.drill.on{display:flex}
+.drill::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),
+                   linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:26px 26px}
+.d-bar{position:sticky;top:0;z-index:2;background:var(--bg);border-bottom:1px solid var(--line)}
+.d-bar-in{max-width:var(--maxw);margin:0 auto;padding:9px var(--sp);display:flex;align-items:center;gap:10px}
+.d-count{font-family:var(--f-mono);font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.d-body{position:relative;z-index:1;max-width:var(--maxw);margin:0 auto;width:100%;
+  padding:18px var(--sp) 120px}
+.d-foot{position:fixed;bottom:0;left:0;right:0;z-index:3;background:var(--bg);
+  border-top:1px solid var(--line);padding:10px var(--sp) calc(10px + env(safe-area-inset-bottom))}
+.d-foot-in{max-width:var(--maxw);margin:0 auto;display:flex;gap:8px}
+.nextbtn{flex:1;background:var(--accent);border:1px solid var(--accent);border-radius:9px;
+  padding:13px;font-size:15px;font-weight:700;letter-spacing:.04em;min-height:50px}
+@media (prefers-color-scheme:dark){.nextbtn{color:#0d1e2a}}
+:root[data-theme="dark"] .nextbtn{color:#0d1e2a}
+:root[data-theme="light"] .nextbtn{color:#fbfcfb}
+.nextbtn:disabled{background:var(--panel-2);border-color:var(--line);color:var(--ink-3)}
+.result{text-align:center;padding:44px 0}
+.result .big{font-family:var(--f-mono);font-size:56px;font-weight:700;line-height:1;color:var(--accent)}
+.result .cap{font-size:13px;color:var(--ink-2);margin-top:10px}
+.result .rlist{text-align:left;margin-top:26px;border:1px solid var(--line);border-radius:10px;
+  background:var(--panel);overflow:hidden}
+.result .rrow{display:flex;gap:10px;padding:10px 14px;border-top:1px solid var(--line);font-size:13px}
+.result .rrow:first-child{border-top:0}
+.result .rrow .mk{font-family:var(--f-mono);font-size:11px;font-weight:700;flex:none;width:20px}
+.result .rrow.o .mk{color:var(--ok)}.result .rrow.x .mk{color:var(--ng)}
+
+/* ---------- footer ---------- */
+.links{margin-top:52px;border-top:2px solid var(--ink);padding-top:20px}
+.links h3{font-family:var(--f-mono);font-size:11px;letter-spacing:.16em;color:var(--ink-3);margin-bottom:12px}
+.linkgrid{display:grid;gap:8px}
+.lk{display:flex;align-items:center;gap:11px;text-decoration:none;border:1px solid var(--line);
+  border-radius:9px;padding:12px 14px;background:var(--panel);min-height:52px;color:var(--ink)}
+.lk:hover{border-color:var(--accent);background:var(--accent-soft)}
+.lk .t{font-size:13.5px;font-weight:700;line-height:1.4}
+.lk .d{font-size:11.5px;color:var(--ink-3);line-height:1.4;margin-top:1px}
+.lk .ar{margin-left:auto;font-family:var(--f-mono);color:var(--ink-3);flex:none}
+.foot{margin-top:28px;font-size:11.5px;color:var(--ink-3);line-height:1.8}
+.foot button{background:none;border:0;color:var(--ink-3);text-decoration:underline;padding:0;font-size:11.5px}
+/* ---------- narrow screens ---------- */
+@media (max-width:430px){
+  .bar-in{gap:8px;padding-left:12px;padding-right:12px}
+  .brand small{display:none}
+  .brand{font-size:11.5px;letter-spacing:.1em}
+  .drillbtn{padding:7px 10px;font-size:12.5px}
+  .gauge{gap:6px}
+  .gauge-track{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
 
-<div id="gate">
-  <h1>RYUSHI FIELD</h1>
-  <p class="jp">粒子場</p>
-  <button id="startBtn">はじめる</button>
-  <p id="status"></p>
-  <p class="note">カメラ映像の上に色とりどりの粒が漂います。体を近づけると粒が押しのけられ、動かした場所から噴き出します。映像は端末の外に出ません。</p>
-  <p id="err"></p>
+<div class="sheet"></div>
+
+<div class="bar">
+  <div class="bar-in">
+    <div class="brand">電子理論<small>DENKEN 3 / RIRON</small></div>
+    <div class="bar-sp"></div>
+    <div class="gauge"><span class="glab">正答</span><span class="gauge-track"><span class="gauge-fill" id="gfill"></span></span><span id="gtxt">0/0</span></div>
+    <button class="drillbtn" id="startDrill">10問ドリル</button>
+    <button class="iconbtn" id="themeBtn" title="表示切替" aria-label="ライト／ダーク切替">◐</button>
+  </div>
 </div>
+<div class="chips"><div class="chips-in" id="chips"></div></div>
 
-<div id="fps"></div>
+<div class="wrap">
+  <div class="hero">
+    <div class="eyebrow">理論 A問題 問11–13 ＋ B問題 問18</div>
+    <h1>電子分野は、出る場所が決まっている。</h1>
+    <p class="lede">電験三種・理論の電子分野は毎回ほぼ同じ席に座って出てきます。過去12年分の出題を並べると、問11・問12・問13の役割が一度も入れ替わっていない。つまり「何を捨てて何を詰めるか」を決められる分野です。下の6テーマを、点の取りやすい順に並べました。</p>
 
-<div id="ui">
-  <div class="row"><label>映像</label><input id="vid"   type="range" min="0" max="1"     step="0.02"   value="0.42"></div>
-  <div class="row"><label>密度</label><input id="count" type="range" min="3000" max="40000" step="1000"  value="16000"></div>
-  <div class="row"><label>反発</label><input id="repel" type="range" min="0" max="0.02"  step="0.0005" value="0.0065"></div>
-  <div class="row"><label>噴出</label><input id="gush"  type="range" min="0" max="0.05"  step="0.001"  value="0.016"></div>
-  <div class="row"><label>残像</label><input id="fade"  type="range" min="0.05" max="0.8" step="0.01"   value="0.26"></div>
-  <div class="row"><label>色</label>  <input id="hue"   type="range" min="0" max="1"     step="0.005"  value="0"></div>
-  <div class="btns">
-    <button id="camBtn">カメラ</button>
-    <button id="maskBtn">判定を見る</button>
-    <button id="invBtn">反転</button>
-    <button id="fsBtn">全画面</button>
+    <div class="seat">
+      <div class="seat-h"><b>出題の指定席</b><span>H27〜R07（上期・下期）の理論科目を並べた結果</span></div>
+      <div class="seat-row"><div class="seat-k">問11</div><div class="seat-v">半導体デバイス<em>半導体の性質／ダイオード各種／トランジスタ／FET</em></div></div>
+      <div class="seat-row"><div class="seat-k">問12</div><div class="seat-v">電子物理<em>電界・磁界中の電子の運動／電子放出／熱電効果・ホール効果</em></div></div>
+      <div class="seat-row"><div class="seat-k">問13</div><div class="seat-v">電子回路<em>増幅回路／演算増幅器／帰還・発振／利得（dB）</em></div></div>
+      <div class="seat-row"><div class="seat-k">問18</div><div class="seat-v">B問題・選択<em>増幅回路か演算増幅器の計算。問17との選択なので、得意なら確実に3点</em></div></div>
+      <div class="seat-f">A問題3問＋B問題1問 ＝ 最大およそ<b>20点</b>。合格ラインが55〜60点であることを考えると、ここだけで配点の2割です。</div>
+    </div>
+
+    <div class="howto">
+      <h3>このページの使い方</h3>
+      <ol>
+        <li><b>まず「かみくだいて理解する」を開く。</b>各項目の結論の下に、<b>なぜそうなるのか</b>をたとえ話から説明した解説が畳んであります。はじめて触れる用語は、結論だけ読んでも頭に入りません。まずここを読んでください。</li>
+        <li><b>足りなければ外部の解説へ飛ぶ。</b>解説の末尾に、その項目を図解付きで詳しく学べるページを付けてあります。<span class="ib g">解説</span>は電験受験者向けのやさしい解説、<span class="ib w">用語</span>は用語そのものをもっと深く知りたいとき。</li>
+        <li><b>そのうえで演習を解く。</b>ここで初めて「確認」になります。間違えた問題は上部のチップで絞り込めます。</li>
+        <li><b>覚えたら10問ドリルで回す。</b>間違えた問題と未着手を優先して出題するので、隙間時間はこれだけで足ります。</li>
+      </ol>
+    </div>
+
+    <div class="note">
+      <b>問題文について。</b>本ページの設問は、上の年度の過去問の論点を隙間時間用に再構成した類題を含みます（数値・選択肢は原文どおりではありません）。論点の当たりをつける用途に使い、<b>数値や表現の最終確認は必ず各問の「電験王で原文を確認」リンク先で</b>行ってください。式や定義は複数出典で確認していますが、独学の裏取りは公式の過去問PDFが確実です。
+    </div>
+  </div>
+
+  <div id="topics"></div>
+
+  <div class="links">
+    <h3>参照先</h3>
+    <div class="linkgrid">
+      <a class="lk" href="https://denken-ou.com/riron/" target="_blank" rel="noopener">
+        <span><span class="t">電験王3 ─ 理論 問題一覧</span><span class="d">年度×問番号で全問の解説に飛べる。電子分野の裏取りはここが最速</span></span><span class="ar">↗</span></a>
+      <a class="lk" href="https://www.shiken.or.jp/chief/third/qa/" target="_blank" rel="noopener">
+        <span><span class="t">電気技術者試験センター ─ 問題と解答</span><span class="d">公式の問題PDFと解答。数値の最終確認はこれが原本</span></span><span class="ar">↗</span></a>
+      <a class="lk" href="https://denken3.kakomonn.com/" target="_blank" rel="noopener">
+        <span><span class="t">過去問ドットコム ─ 電験三種</span><span class="d">スマホで年度別に解ける。分野を絞った演習の補充に</span></span><span class="ar">↗</span></a>
+      <a class="lk" href="https://www.tac-school.co.jp/kouza_denken/denken_guide_kakomon.html" target="_blank" rel="noopener">
+        <span><span class="t">TAC ─ 過去問無料ダウンロード</span><span class="d">過去12年分の問題・解答。印刷して机で解きたいとき</span></span><span class="ar">↗</span></a>
+    </div>
+    <p class="foot">
+      進捗はこの端末のブラウザにだけ保存されます（他の端末とは同期しません）。<br>
+      <button id="resetBtn">保存した学習記録を消す</button>
+    </p>
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script type="module">
+<div class="drill" id="drill">
+  <div class="d-bar"><div class="d-bar-in">
+    <span class="d-count" id="dCount">1 / 10</span>
+    <span class="bar-sp"></span>
+    <button class="iconbtn" id="dClose" aria-label="ドリルを閉じる">✕</button>
+  </div></div>
+  <div class="d-body" id="dBody"></div>
+  <div class="d-foot"><div class="d-foot-in">
+    <button class="nextbtn" id="dNext" disabled>選択してください</button>
+  </div></div>
+</div>
+
+<script>
 "use strict";
 
-/* =========================================================================
-   1. MediaPipe Image Segmenter が人物シルエットを返す
-   2. 粗いグリッドに落としてぼかす → 占有場（体＝面）
-   3. 粒子は CPU 更新。占有場の勾配で押し出され、時間差分で噴き出す
-   4. 粒子は加算合成で trailRT に溜める（残像）
-   5. 合成パスで「カメラ映像 + trailRT」を画面に出す  ← 今回の追加
-   ========================================================================= */
+/* 外部の学習ページ。すべて実在を確認済み（2026-08-18）。
+   g = 電験受験者向けのやさしい解説、w = 用語をもっと深く（Wikipedia） */
+var ES="https://e-sysnet.com/", D3="https://denken3s.com/", WK="https://ja.wikipedia.org/wiki/";
+function g(t,u){return{k:"g",t:t,u:u};}
+function w(t){return{k:"w",t:t,u:WK+t};}
+var L={
+  move:   g("電界中の電子の運動", ES+"%e9%9b%bb%e7%95%8c%e4%b8%ad%e3%81%ae%e9%9b%bb%e5%ad%90%e3%81%ae%e9%81%8b%e5%8b%95/"),
+  lorentz:g("ローレンツ力の向きと円運動", ES+"%e3%83%ad%e3%83%bc%e3%83%ac%e3%83%b3%e3%83%84%e5%8a%9b/"),
+  emit:   g("電子放出と熱起電力の原理", ES+"%e9%9b%bb%e5%ad%90%e6%94%be%e5%87%ba%e3%81%a8%e7%86%b1%e8%b5%b7%e9%9b%bb%e5%8a%9b/"),
+  semi:   g("ｐ型半導体とｎ型半導体", ES+"%e5%8d%8a%e5%b0%8e%e4%bd%93/"),
+  diode:  g("ダイオードとトランジスタの特性", ES+"%e3%83%80%e3%82%a4%e3%82%aa%e3%83%bc%e3%83%89%e3%81%a8%e3%83%88%e3%83%a9%e3%83%b3%e3%82%b8%e3%82%b9%e3%82%bf/"),
+  tramp:  g("トランジスタ増幅回路（3つの接地方式）", ES+"%e3%83%88%e3%83%a9%e3%83%b3%e3%82%b8%e3%82%b9%e3%82%bf%e5%a2%97%e5%b9%85%e5%9b%9e%e8%b7%af/"),
+  bias:   g("トランジスタのバイアス回路", ES+"%e3%83%90%e3%82%a4%e3%82%a2%e3%82%b9%e5%9b%9e%e8%b7%af/"),
+  eq:     g("トランジスタの等価回路", ES+"%e3%83%88%e3%83%a9%e3%83%b3%e3%82%b8%e3%82%b9%e3%82%bf%e3%81%ae%e7%ad%89%e4%be%a1%e5%9b%9e%e8%b7%af/"),
+  fet:    g("FET増幅回路", ES+"fet%e5%a2%97%e5%b9%85%e5%9b%9e%e8%b7%af/"),
+  amps:   g("多段・負帰還・電力増幅回路", ES+"%e8%89%b2%e3%80%85%e3%81%aa%e5%a2%97%e5%b9%85%e5%9b%9e%e8%b7%af/"),
+  op:     g("オペアンプ（反転・非反転増幅回路）", ES+"%e3%82%aa%e3%83%9a%e3%82%a2%e3%83%b3%e3%83%97/"),
+  osc:    g("発振回路と変調回路の原理", ES+"%e7%99%ba%e6%8c%af%e5%9b%9e%e8%b7%af%e3%81%a8%e5%a4%89%e8%aa%bf%e5%9b%9e%e8%b7%af/"),
+  thermo: g("熱電効果（図解）", D3+"thermoelectric-effect/"),
+  hall:   g("ホール効果（図解）", D3+"hall-effect/"),
+  piezo:  g("圧電効果（図解）", D3+"piezo/")
+};
 
-const $ = id => document.getElementById(id);
-const gate=$('gate'), errEl=$('err'), statusEl=$('status'), ui=$('ui'), fpsEl=$('fps');
+var TOPICS = [
+{
+  id:"eff", no:"01", name:"各種効果と電子放出", seat:"問12",
+  cost:5, pri:"暗記だけ・計算ゼロ",
+  lead:"計算が一切なく、名前と現象の対応を覚えるだけで正解できる。電子分野で最初に手をつけるべき場所です。似た名前が並ぶので、対にして覚えるのがコツ。",
+  points:[
+    {k:"ゼーベック効果", v:"<b>異種金属の接合＋温度差 → 起電力</b>。熱電対による温度測定。<span class='hi'>温度差が原因、電気が結果</span>。",
+     why:"金属を熱すると、その場所の電子は熱で激しく動き回るようになり、まだ冷たい側へ散らばっていきます。片側だけ熱すれば電子は冷たい側に偏るので、<b>熱い側が＋・冷たい側が−</b>になる。ただし1種類の金属だけで輪をつくると、行きと帰りでまったく同じことが起きて<b>ぴったり打ち消し合ってしまう</b>。そこで電子の動きやすさが違う2種類の金属をつなぐと、打ち消しきれずに差が残り、はじめて電圧として取り出せます。<br><br>この電圧は温度差にほぼ比例するので、<b>逆に電圧を測れば温度が分かる</b>——これが工場でもよく見る熱電対（K熱電対など）の正体です。",
+     l:[L.thermo,L.emit,w("ゼーベック効果")]},
+    {k:"ペルチェ効果", v:"<b>異種金属の接合＋電流 → 吸熱・発熱</b>。電子冷却素子。<span class='hi'>ゼーベックの逆向き</span>。この2つは必ずセットで覚える。",
+     why:"ゼーベックの<b>ちょうど裏返し</b>です。電子にとって「居心地のよさ（エネルギーの高さ）」は金属ごとに違います。接合部を通り抜けるとき、居心地の悪い側へ移らされる電子は<b>足りない分のエネルギーを周りの熱から奪う＝その接合部が冷える</b>。逆向きに通る接合部では余った分を熱として吐き出すので、そちらは熱くなります。<br><br>電流の向きを変えれば冷える側と熱くなる側が入れ替わる。冷媒もコンプレッサーも要らずに電気だけで冷やせるので、電子冷却素子（ペルチェ素子）として小型冷蔵庫や空調服に使われています。",
+     l:[L.thermo,w("ペルチェ効果")]},
+    {k:"トムソン効果", v:"<b>1種類</b>の金属で、温度勾配のあるところに電流を流すと吸熱・発熱。「異種金属じゃない方」がトムソン。",
+     why:"ゼーベック・ペルチェとの違いは<b>「2種類か、1種類か」だけ</b>です。1本の金属棒の端と端に温度差があるところへ電流を流すと、電子は温度の違う場所へ移動することになり、そのぶん熱を吸ったり吐いたりします。<br><br>試験で問われるのは仕組みではなく区別だけ。<span class='hi'>異種金属なら ゼーベック（温度差→電圧）／ペルチェ（電流→熱）、単一金属ならトムソン</span>、と3つの名前を仕分けられれば十分です。",
+     l:[w("トムソン効果")]},
+    {k:"ホール効果", v:"半導体に<b>電流と直角に磁界</b>を加えると、<b>両方に直交する向き</b>に起電力。ホール素子で磁束密度を測る。n形とp形で<span class='hi'>起電力の極性が逆</span>になる。",
+     why:"半導体の中を流れているキャリヤに横から磁界をかけると、<b>ローレンツ力で片側の壁に押しやられます</b>。片側にキャリヤが溜まれば、そこが帯電して反対側との間に電圧が出る。これがホール電圧です。<br><br>この電圧は磁界が強いほど大きくなるので、<b>逆に電圧を測れば磁束密度が分かる</b>——磁気センサ（ホール素子）の原理です。そして n形は電子が、p形は正孔が溜まるので、<b>溜まる電荷の符号が逆＝電圧の向きも逆</b>になる。だからキャリヤがどちらなのかの判定にも使えます。",
+     l:[L.hall,w("ホール効果"),w("ローレンツ力")]},
+    {k:"圧電（ピエゾ）効果", v:"結晶に力 → 電圧。逆圧電効果（電圧 → ひずみ）と合わせて<b>水晶振動子</b>に使う。R07下 問13で出題。",
+     why:"水晶のような結晶は、中の＋イオンと−イオンがきれいに並んでいて全体では中立です。ここに力を加えて格子をゆがめると<b>＋と−の重心がずれて偏りが生まれ、表面に電圧が出る</b>。ガスコンロやライターの着火は、これで火花を飛ばしています。<br><br>逆に電圧をかけると結晶がゆがむのが<b>逆圧電効果</b>。交流をかければ伸び縮みを繰り返して振動し、水晶固有の周波数でとても鋭く共振します。この共振がずば抜けて安定なので、時計やマイコンの水晶振動子に使われます。",
+     l:[L.piezo,w("圧電効果"),w("水晶振動子")]},
+    {k:"外部光電効果", v:"金属に光 → <b>電子が飛び出す</b>。光子のエネルギー <span class='f'>hν</span> が仕事関数 <span class='f'>W</span> を超えることが条件。<span class='hi'>光の強さではなく振動数（波長）で決まる</span>。",
+     why:"理解の鍵は、光を「波」ではなく<b>「粒（光子）の集まり」</b>だと考えることです。光子1個が持つエネルギーは <span class='f'>hν</span> で<b>振動数だけ</b>で決まり、明るさというのは光子の<b>個数</b>にすぎません。<br><br>電子を金属から引きはがすには最低 <span class='f'>W</span>（仕事関数）のエネルギーが要りますが、電子は光子を<b>1個ずつしか受け取れない</b>。だから光子1個が W に届かなければ、何個ぶつけても永久に飛び出しません。結果として<span class='hi'>「弱い紫外線では出るのに、まぶしい赤色光ではまったく出ない」</span>という一見おかしなことが起きる。アインシュタインがノーベル賞を取ったのはこの説明です。",
+     l:[L.emit,w("光電効果"),w("仕事関数")]},
+    {k:"光導電効果", v:"光 → <b>導電率が上がる（抵抗が下がる）</b>。CdSセル、光導電セル。「飛び出さないけど動きやすくなる」内部の効果。",
+     why:"光電効果の<b>「内部版」</b>です。光のエネルギーをもらった電子が、金属の外へ飛び出すところまでは行かないけれど、結合から外れて<b>物質の中を自由に動けるようになる</b>。動ける電子が増えれば、それだけ電気が流れやすくなる＝抵抗が下がります。<br><br>明るいと抵抗が下がるCdSセルは、暗くなると自動で点く街灯やカメラの露出計に使われています。<span class='hi'>飛び出す＝外部光電効果／抵抗が下がる＝光導電効果</span>という対比で押さえてください。",
+     l:[w("光電効果")]},
+    {k:"光起電力効果", v:"pn接合に光 → <b>起電力が発生</b>。太陽電池・フォトダイオード。光の3効果は<span class='hi'>飛び出す／抵抗が下がる／電圧が出る</span>で区別。",
+     why:"pn接合の境目には、もともと<b>空乏層という「電位の坂」</b>ができています（→半導体の項目）。ここに光が当たって電子と正孔のペアが生まれると、その坂に沿って<b>電子はn側へ、正孔はp側へ転がり落ちていく</b>。プラスとマイナスが左右に分かれるので、そのまま電圧になります。<br><br>電池のように化学反応も消耗もなく、光を当てているあいだ電気が出続ける。これが太陽電池です。同じ仕組みを「光を検出する」目的で逆バイアスして使うとフォトダイオードになります。",
+     l:[w("光起電力効果"),w("太陽電池")]},
+    {k:"電子放出 4種", v:"<b>熱電子放出</b>（加熱）／<b>光電子放出</b>（光）／<b>電界放出</b>（強い電界）／<b>二次電子放出</b>（電子や粒子の衝突）。<span class='hi'>原因が何かで名前が決まる</span>だけ。",
+     why:"金属の中の電子は、<b>仕事関数という「壁」に閉じ込められている</b>と考えてください。この壁を越えさせる手段が4通りあるだけで、それぞれに名前が付いています。<br><br><b>熱</b>で揺さぶって飛び出させる＝熱電子放出（真空管の陰極、ブラウン管）。<b>光子</b>をぶつけてはじき出す＝光電子放出（光電管）。<b>強い電界</b>で壁そのものを薄くして通り抜けさせる＝電界放出。<b>他の電子</b>を高速でぶつけて叩き出す＝二次電子放出（光電子増倍管）。<span class='hi'>原因の名前がそのまま放出の名前</span>なので、覚える負荷はほぼゼロです。",
+     l:[L.emit,w("仕事関数"),w("エジソン効果")]},
+    {k:"紛らわしい肢", v:"ピンチ効果（電流の自己磁界で導体がくびれる）、表皮効果は電子分野の効果ではないが撹乱肢として並ぶ。",
+     why:"選択肢に混ぜられる「効果」の名前です。<b>ピンチ効果</b>は、電流が自分でつくった磁界に締めつけられて電流路が細くなる現象（アーク放電や核融合の話）。<b>表皮効果</b>は、高周波の電流が導体の表面近くにばかり流れる現象で、こちらは電力科目の送電線の話です。<br><br>どちらも<b>キャリヤや熱や光とは無関係</b>なので、電子分野の効果を聞かれている問題では真っ先に切って構いません。"}
+  ],
+  qs:[
+    {q:"ホール効果の説明として正しいものはどれか。",
+     c:["半導体に電流を流し、電流と直角に磁界を加えると、その両方に直交する方向に起電力が現れる",
+        "異なる2種類の金属を接合し、接合部に温度差を与えると起電力が生じる",
+        "異なる2種類の金属の接合部に電流を流すと、接合部で発熱または吸熱が起こる",
+        "結晶に外部から力を加えると、その表面に電圧が発生する"],
+     a:0,
+     e:"2番目は<b>ゼーベック効果</b>（熱電対）、3番目は<b>ペルチェ効果</b>（電子冷却）、4番目は<b>圧電効果</b>です。ホール効果は<span class='hi'>電流・磁界・起電力の3つが互いに直交</span>するのが特徴で、ホール素子として磁束密度の測定に使われます。n形半導体とp形半導体では多数キャリヤの符号が違うため<b>起電力の極性が逆</b>になり、これを利用してキャリヤの種類も判定できます。",
+     s:{t:"R07上 問11 ／ R05上 問11", u:"https://denken-ou.com/rironr7-1-11/"}},
 
-let renderer, cam, scene, fadeScene, compScene, maskScene;
-let trailRT, compMat, points, geo, posAttr, colAttr, sizeAttr, fadeMat;
-let videoTex, maskTex, maskTexData, maskMesh;
+    {q:"金属に光を当てて電子を放出させる（外部光電効果）とき、電子が放出されるかどうかを決めるのはどれか。",
+     c:["光の強さ（明るさ）","光の振動数（波長）","光を当てている時間","金属の温度"],
+     a:1,
+     e:"光子1個のエネルギー <span class='f'>E = hν</span> が、その金属の<b>仕事関数 W</b> より大きくないと電子は飛び出しません。<span class='hi'>振動数が足りなければ、どんなに強い光をどれだけ長く当てても電子は出ない</span>——これが試験の狙いどころです。役割を分けて覚えます：<b>振動数</b>が「出るかどうか」と「飛び出す電子の運動エネルギー」を決め、<b>光の強さ</b>は「出てくる電子の個数」を決める。",
+     s:{t:"R02 問12", u:"https://denken-ou.com/rironr2-12/"}},
 
-const video=document.createElement('video');
-video.setAttribute('playsinline',''); video.setAttribute('webkit-playsinline','');
-video.muted=true; video.autoplay=true; video.playsInline=true;
+    {q:"電子放出の原因とその名称の組合せとして、誤っているものはどれか。",
+     c:["金属を高温に加熱する ── 熱電子放出",
+        "金属表面に強い電界を加える ── 電界放出",
+        "電子や粒子が金属に衝突する ── 二次電子放出",
+        "金属に光を当てる ── 熱電子放出"],
+     a:3,
+     e:"光による放出は<b>光電子放出</b>です。電子放出は4種類しかなく、<span class='hi'>原因の名前がそのまま放出の名前になっている</span>だけなので、覚える負荷はほぼゼロ。用途とセットにすると忘れません：熱電子放出＝真空管の陰極、電界放出＝電界放出ディスプレイ、二次電子放出＝光電子増倍管、光電子放出＝光電管。",
+     s:{t:"R07上 問12（電極からの電子放出）", u:"https://denken-ou.com/rironr7-1-12/"}},
 
-let stream=null, facing='user', segmenter=null, useFallback=false;
-let running=false, started=false, showMask=false, invert=false;
+    {q:"ペルチェ効果を応用したものはどれか。",
+     c:["熱電対による温度測定","電子冷却素子","水晶振動子","ホール素子による磁束密度の測定"],
+     a:1,
+     e:"<b>ペルチェ＝電流を流すと熱が移動する</b>（電気が原因、熱が結果）ので、冷却に使えます。熱電対は逆に<b>温度差を与えると起電力が出る＝ゼーベック効果</b>。<span class='hi'>「ペルチェは冷やす、ゼーベックは測る」</span>で対にして覚えるのが速い。単一の金属で温度勾配＋電流のときは<b>トムソン効果</b>です。",
+     s:{t:"R05上 問12（異種金属の接合）", u:"https://denken-ou.com/rironr5-1-12/"}},
 
-let GW=0,GH=0, videoAspect=4/3;
-let gField=null,gTmp=null,gPrev=null,gDelta=null;
-let fbCanvas=null,fbCtx=null,fbPrev=null;
+    {q:"水晶振動子が発振回路の周波数安定化に使われるのは、水晶のどの性質によるか。",
+     c:["圧電（ピエゾ）効果","ホール効果","ゼーベック効果","光導電効果"],
+     a:0,
+     e:"力を加えると電圧が出る（圧電効果）／電圧を加えるとひずむ（逆圧電効果）ため、交流を加えると水晶が<b>機械的に共振</b>します。この共振は<span class='hi'>Q が極めて高く、共振周波数が温度や電圧の影響をほとんど受けない</span>ので、LC発振回路よりはるかに安定します。発振回路では、直列共振と並列共振にはさまれた<b>誘導性となる狭い周波数範囲</b>で使うのが定石です。",
+     s:{t:"R07下 問13", u:"https://denken-ou.com/rironr7-2-13/"}}
+  ]
+},
+{
+  id:"opamp", no:"02", name:"演算増幅器（オペアンプ）", seat:"問13・問18",
+  cost:5, pri:"公式2本で解ける",
+  lead:"覚える式は反転と非反転の2本だけ。しかも解き方が完全に決まっているので、初見の回路でも手順どおりに追えば答えが出ます。B問題（問18）でも繰り返し出るので、投資効率が最も高い項目。",
+  points:[
+    {k:"理想オペアンプ", v:"電圧増幅度 <span class='f'>A = ∞</span>／入力インピーダンス <span class='f'>= ∞</span>／<span class='hi'>出力インピーダンス = 0</span>／周波数帯域 <span class='f'>= ∞</span>／同相信号除去比（CMRR）<span class='f'>= ∞</span>／オフセット電圧 <span class='f'>= 0</span>。<b>入力は∞、出力は0</b>が最頻出のひっかけ。",
+     why:"オペアンプとは、ひとことで言うと<b>「2つの入力端子の電圧の“差”だけを、とてつもない倍率で増幅する部品」</b>です。倍率は実物でも数万〜数十万倍あります。<br><br>ここまで大きいと、そのまま使ってもわずかな入力差で出力が電源電圧まで振り切れてしまって使い物になりません。だから<b>必ず出力の一部を−端子に戻して（負帰還をかけて）</b>、倍率を外付け抵抗で好きな値に決め直して使います。理想化するのは計算を簡単にするためですが、実物も十分それに近いので、試験でも実務でもこの近似で通ります。",
+     l:[L.op,w("オペアンプ")]},
+    {k:"解法（これだけ）", v:"① <b>＋端子の電位</b>を求める → ② <b>仮想短絡</b>（イマジナリショート）で −端子も同じ電位 → ③ <b>入力端子に電流は流れない</b>ので、−端子につながる枝の電流の和をとる。この3手順で全問対応できる。",
+     why:"<b>なぜ＋と−が同じ電位になるのか。</b>オペアンプは2入力の差を A 倍して出力します。式にすると <span class='f'>出力 = A ×（＋端子 − −端子）</span>。いま出力が5Vなどの<b>ふつうの有限な値でおさまっている</b>とすると、両辺をAで割って <span class='f'>（＋端子 − −端子）= 5 / ∞ ≒ 0</span>。<br><br>つまり<span class='hi'>出力が振り切れていない限り、2つの入力の電位差はゼロとみなせる</span>。実際に導線でつながっているわけではないので「仮想」短絡と呼びます。<b>負帰還がかかっている回路でしか成り立たない</b>のが注意点で、コンパレータのように帰還のない使い方では成立しません。",
+     l:[L.op]},
+    {k:"反転増幅回路", v:"<span class='f'>Vo = −(Rf / R1) × Vi</span>　入出力は<b>逆相</b>。−端子は<b>仮想接地</b>（0V）。入力抵抗は <span class='f'>R1</span>。",
+     why:"＋端子が接地されて0Vなので、仮想短絡により−端子も0Vに固定されます（<b>仮想接地</b>）。すると入力Viから見た回路は「0Vに向かってR1がぶら下がっているだけ」なので、流れる電流は素直に <span class='f'>Vi / R1</span>。<br><br>ここからが肝で、<b>オペアンプの入力端子には電流が入っていけない</b>（入力インピーダンス∞）。行き場を失ったこの電流は、<b>Rfを通って出力側へ抜けるしかありません</b>。0Vの地点から出発してRfで電圧が下がっていくので、たどり着く出力はマイナス側になる——これが符号が反転する理由です。",
+     l:[L.op,w("オペアンプ")]},
+    {k:"非反転増幅回路", v:"<span class='f'>Vo = (1 + Rf / R1) × Vi</span>　<b>同相</b>。入力インピーダンスが非常に大きい。<span class='hi'>式に 1＋ が付くので、増幅度を1より小さくできない</span>のが特徴。",
+     why:"今度は入力Viが＋端子に直接入るので、仮想短絡で<b>−端子もViと同じ電位</b>になります。−端子と接地の間にあるR1には、両端にちょうどViがかかるので <span class='f'>Vi / R1</span> の電流が流れる。この電流もオペアンプには入れないので、<b>必ずRfを通って出力から来ている</b>ことになります。<br><br>だから出力は、<b>Viの高さの上に、さらにRfでの電圧降下分が積み上がった形</b>。式の「1＋」はこの土台のViの分です。土台がある以上どうやっても出力はViより大きくなり、<span class='hi'>増幅度を1より小さくできない</span>——これが反転増幅との構造的な違いです。",
+     l:[L.op]},
+    {k:"ボルテージフォロワ", v:"出力を−端子に直結。<span class='f'>Vo = Vi</span>（利得1）。増幅ではなく<b>インピーダンス変換・緩衝</b>が目的。トランジスタのコレクタ接地（エミッタホロワ）と同じ役割。",
+     why:"非反転増幅で <span class='f'>Rf = 0</span> にした極端な場合です。式に入れると増幅度は1、つまり<b>まったく増幅しません</b>。それなら要らないように見えますが、価値は倍率ではなく<b>入口と出口の性質</b>にあります。<br><br>入力インピーダンスが∞なので、信号源から電流を一切もらわない＝<b>相手の電圧を乱さない</b>。出力インピーダンスが0なので、重い負荷をつないでも<b>電圧が落ちない</b>。「電圧はそのまま、力持ちにして次へ渡す」ための変換器です。センサの微弱な出力を次の回路へ渡すときの定番。",
+     l:[L.op]},
+    {k:"反転加算回路", v:"<span class='f'>Vo = −Rf (V1/R1 + V2/R2)</span>　−端子が仮想接地なので、各入力の電流がそのまま足し算される。",
+     why:"ポイントは<b>−端子が常に0Vに固定されている</b>ことです。V1から見ても、V2から見ても、行き先はいつでも0V。だから<span class='hi'>お互いの存在がまったく見えず、干渉しません</span>。<br><br>もし−端子の電位が入力によって動いてしまうと、V1の電流がV2の側に影響して式が複雑になりますが、仮想接地のおかげでそれが起きない。各枝の電流をただ足すだけで済み、その合計がRfに集まって出力になります。音声を混ぜるミキサーの原理そのものです。",
+     l:[L.op]},
+    {k:"多段接続", v:"各段の増幅度を<b>掛け算</b>するだけ。出力インピーダンスが0なので<span class='hi'>後段をつないでも前段の出力が変わらない</span>——だから単純に掛けてよい。",
+     why:"ふつうの回路では、後ろに何かをつなぐと<b>そちらに電流を取られて前段の出力電圧が下がって</b>しまうので、単純に掛け算はできません。<br><br>ところが理想オペアンプは<b>出力インピーダンスが0</b>。どんな負荷をつないでも出力電圧はびくともしないので、段どうしが影響し合わない。だから安心して <span class='f'>全体 = A1 × A2 × A3</span> と掛けてよい。B問題（問18）はこの形を（a）（b）に分けて出題する定番パターンです。",
+     l:[L.op,L.amps]},
+    {k:"積分・微分", v:"帰還にコンデンサ → 積分回路 <span class='f'>Vo = −(1/CR)∫Vi dt</span>。入力側にコンデンサ → 微分回路。",
+     why:"コンデンサは<b>「流れ込んだ電荷を溜めていく」</b>部品です。反転増幅回路のRfをコンデンサに置き換えると、入力から来る電流 <span class='f'>Vi / R</span> がひたすらコンデンサに溜まり続ける。溜まった電荷＝それまでの電流の合計なので、<b>出力は入力を時間で足し合わせた形＝積分</b>になります。<br><br>一定の電圧を入れておけば出力がまっすぐ下がっていくので、三角波やのこぎり波をつくるのに使われます。コンデンサを入力側に移すと役割が入れ替わって微分回路になります。",
+     l:[L.op]}
+  ],
+  qs:[
+    {q:"理想的な演算増幅器の性質として、誤っているものはどれか。",
+     c:["電圧増幅度は無限大である","入力インピーダンスは無限大である","出力インピーダンスは無限大である","周波数帯域幅は無限大である"],
+     a:2,
+     e:"正しくは<b>出力インピーダンスは 0</b> です。<span class='hi'>入力側は∞、出力側は0</span>とセットで覚えます。意味を押さえると忘れません：入力∞だから信号源から電流を吸い取らず、出力0だから<b>どんな負荷をつないでも出力電圧が下がらない</b>。この「出力0」があるおかげで、多段接続のときに各段の増幅度を単純に掛け算できます。",
+     s:{t:"R02 問13 ／ R06下 問18", u:"https://denken-ou.com/rironr2-13/"}},
 
-let N=0; const MAXN=40000;
-let px,py,vx,vy,pb,ph;
-const params={repel:0.0065,gush:0.016,flow:0.018,fade:0.26,vid:0.42,hue:0};
+    {q:"下図の反転増幅回路で、R1 = 20 kΩ、Rf = 100 kΩ、入力電圧 Vi = 0.30 V のとき、出力電圧 Vo はいくらか。",
+     g:"<svg viewBox='0 0 320 152' role='img' aria-label='反転増幅回路。入力Viから抵抗R1を通って反転入力端子へ、そこから帰還抵抗Rfが出力へつながり、非反転入力端子は接地されている。'><g fill='none' stroke='currentColor' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'><path d='M22 58 H58'/><rect x='58' y='50' width='40' height='16' rx='2'/><path d='M98 58 H172'/><path d='M150 58 V22 H206'/><rect x='206' y='14' width='40' height='16' rx='2'/><path d='M246 22 H278 V78'/><path d='M172 34 V122 L242 78 Z'/><path d='M242 78 H300'/><path d='M172 98 H146 V128'/><path d='M134 128 H158 M139 134 H153 M144 140 H148'/></g><g fill='currentColor'><circle cx='150' cy='58' r='2.6'/><circle cx='278' cy='78' r='2.6'/></g><g fill='currentColor' font-family='ui-monospace,Consolas,monospace' font-size='11'><text x='20' y='48'>Vi</text><text x='78' y='82' text-anchor='middle'>R1</text><text x='78' y='94' text-anchor='middle'>20k</text><text x='226' y='9' text-anchor='middle'>Rf 100k</text><text x='298' y='68' text-anchor='end'>Vo</text><text x='185' y='63' text-anchor='middle' font-size='15'>−</text><text x='185' y='105' text-anchor='middle' font-size='15'>+</text></g></svg>",
+     c:["−1.5 V","＋1.5 V","−0.06 V","−1.8 V"],
+     a:0,
+     e:"手順どおりに：＋端子が接地なので0V、仮想短絡で<b>−端子も0V（仮想接地）</b>。R1に流れる電流は <span class='f'>i = 0.30 / 20k = 15 μA</span>。オペアンプの入力には電流が流れ込まないので、この15μAが<b>そのまま Rf を通って出力側へ抜けます</b>。よって <span class='f'>Vo = 0 − 15μ × 100k = −1.5 V</span>。公式で言えば <span class='f'>Vo = −(Rf/R1)Vi = −5 × 0.30</span>。<span class='hi'>反転増幅では符号が必ずマイナスになる</span>ので、選択肢に＋があれば真っ先に切れます。",
+     s:{t:"頻出パターン（反転増幅）", u:"https://denken-ou.com/rironh29-18/"}},
 
-let coverX=1,coverY=1,mirror=1;
+    {q:"非反転増幅回路で、接地側の抵抗 R1 = 5 kΩ、帰還抵抗 Rf = 45 kΩ、入力電圧 Vi = 0.20 V のとき、出力電圧 Vo はいくらか。",
+     c:["＋2.0 V","＋1.8 V","−1.8 V","＋0.20 V"],
+     a:0,
+     e:"＋端子にViが直接入るので<b>＋端子 = 0.20 V</b>、仮想短絡で<b>−端子も 0.20 V</b>。R1（−端子と接地の間）に流れる電流は <span class='f'>0.20 / 5k = 40 μA</span>で、これがそのまま Rf を流れます。したがって <span class='f'>Vo = 0.20 + 40μ × 45k = 0.20 + 1.8 = 2.0 V</span>。公式は <span class='f'>Vo = (1 + Rf/R1)Vi = 10 × 0.20</span>。<span class='hi'>1.8 V を選ばせるのが定番のひっかけ</span>——「1＋」を忘れると必ずこの値になります。",
+     s:{t:"頻出パターン（非反転増幅）", u:"https://denken-ou.com/rironr2-13/"}},
 
-/* ---------- colour lookup: full spectrum ---------- */
-const LUT=new Float32Array(256*3);
-(function(){
-  for(let i=0;i<256;i++){
-    const h=i/256, o=i*3, T=6.28318530718;
-    LUT[o  ]=0.5+0.5*Math.cos(T*(h+0.00));
-    LUT[o+1]=0.5+0.5*Math.cos(T*(h+0.33));
-    LUT[o+2]=0.5+0.5*Math.cos(T*(h+0.67));
-  }
-})();
+    {q:"ボルテージフォロワ（出力端子を反転入力端子に直結した回路）の主な用途はどれか。",
+     c:["入力信号を大きく増幅する","前段と後段を切り離す緩衝（インピーダンス変換）","入力信号の位相を180°反転させる","入力信号の直流成分を取り除く"],
+     a:1,
+     e:"電圧増幅度は<b>1（同相）</b>で、増幅はしません。価値は<span class='hi'>入力インピーダンスが∞・出力インピーダンスが0</span>という点にあります。出力インピーダンスの高いセンサなどを、入力インピーダンスの低い次段に直接つなぐと電圧が下がってしまう。その間に挟んで<b>電圧を落とさずに信号を渡す</b>のが役目です。トランジスタのコレクタ接地（エミッタホロワ）とまったく同じ発想。",
+     s:{t:"R02 問13", u:"https://denken-ou.com/rironr2-13/"}},
 
-/* ---------- segmentation ---------- */
-async function loadSegmenter(){
-  statusEl.textContent='モデルを読み込み中…';
-  const v=await import("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18");
-  const files=await v.FilesetResolver.forVisionTasks(
-    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/wasm");
-  segmenter=await v.ImageSegmenter.createFromOptions(files,{
-    baseOptions:{
-      modelAssetPath:"https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite",
-      delegate:"GPU"
-    },
-    runningMode:"VIDEO", outputCategoryMask:false, outputConfidenceMasks:true
+    {q:"反転加算回路で R1 = R2 = 10 kΩ、Rf = 20 kΩ、V1 = 0.10 V、V2 = 0.40 V を加えたとき、出力電圧 Vo はいくらか。",
+     c:["−1.0 V","−0.50 V","＋1.0 V","−0.25 V"],
+     a:0,
+     e:"−端子は<b>仮想接地（0V）</b>なので、各入力抵抗にかかる電圧はそれぞれの入力電圧そのもの。電流は <span class='f'>0.10/10k + 0.40/10k = 10μ + 40μ = 50 μA</span>。これが全部 Rf に流れるので <span class='f'>Vo = −50μ × 20k = −1.0 V</span>。一般式は <span class='f'>Vo = −Rf (V1/R1 + V2/R2)</span>。<span class='hi'>仮想接地のおかげで各入力が互いに干渉しない</span>——だから素直に足し算になる、というのがこの回路の肝です。",
+     s:{t:"頻出パターン（加算回路）", u:"https://denken-ou.com/rironh27-18/"}},
+
+    {q:"電圧増幅度 −2 の反転増幅回路の出力を、電圧増幅度 ＋3 の非反転増幅回路の入力につないだ。全体の入力に 0.50 V を加えたときの最終出力電圧はいくらか。",
+     c:["−3.0 V","＋3.0 V","＋0.50 V","−1.0 V"],
+     a:0,
+     e:"<span class='f'>0.50 × (−2) × (＋3) = −3.0 V</span>。多段のオペアンプ回路は<b>各段の増幅度の積</b>で終わりです。これが許されるのは<span class='hi'>理想オペアンプの出力インピーダンスが0だから</span>——後段をつないでも前段の出力電圧が変わらないので、段どうしの影響を考えなくてよい。B問題（問18）はこの形で（a）（b）に分けて出題されることが多いパターンです。",
+     s:{t:"H29 問18 ／ R06下 問18", u:"https://denken-ou.com/rironh29-18/"}}
+  ]
+},
+{
+  id:"motion", no:"03", name:"電界・磁界中の電子の運動", seat:"問12",
+  cost:5, pri:"公式3本＋定性理解",
+  lead:"問12の常連。式は3本しかなく、しかも半分は「速さは変わらない」「周期は速さによらない」といった定性的な理解を問う論説問題です。計算問題も単位換算さえ落ち着けば取れる。",
+  points:[
+    {k:"電界中の力", v:"<span class='f'>F = eE = eV/d</span>　平行平板なら <span class='f'>E = V/d</span>（<span class='hi'>d は必ず m に直す</span>）。電子は負電荷なので、<b>力の向きは電界と逆</b>＝低電位側から高電位側へ引かれる。",
+     why:"電界の強さ <span class='f'>E</span>［V/m］とは、そもそも<b>「1クーロンの電荷が受ける力」</b>という定義です。だから <span class='f'>e</span>［C］だけ電荷を持つ電子が受ける力は、単純に <span class='f'>F = eE</span> になります。覚える式というより定義そのもの。<br><br>平行平板の場合、電位が距離 d のあいだに V だけ変化するので、1mあたりでは <span class='f'>E = V / d</span>。<b>ここで d をメートルに直し忘れる</b>のが計算問題の最大の失点源です（5mm なら 0.005m）。また電子は<b>負</b>の電荷なので、電界の矢印とは逆向きに力を受け、＋の極板に引き寄せられます。",
+     l:[L.move]},
+    {k:"加速後の速さ", v:"電圧 V で加速したとき <span class='f'>eV = ½mv²</span> → <span class='f'>v = √(2eV/m)</span>。<span class='hi'>電圧を4倍にしても速さは2倍</span>（√に比例）。",
+     why:"電圧 V の「坂」を電子が転がり落ちる、とイメージしてください。坂を下りきったとき、<b>持っていた位置エネルギー <span class='f'>eV</span> がまるごと運動エネルギー <span class='f'>½mv²</span> に変わっています</b>。真空中なので空気抵抗も摩擦もなく、エネルギーは完全に保存されます。<br><br>立てる式はこの1本だけ。<span class='f'>eV = ½mv²</span> を v について解けば答えです。感覚として持っておきたいのは、<b>½ の 2 が √ の中に上がってくる</b>ことと、<span class='hi'>電圧を4倍にしても速さは2倍にしかならない</span>こと。",
+     l:[L.move]},
+    {k:"磁界中の力", v:"ローレンツ力 <span class='f'>F = evB</span>。<b>速度と常に直角</b>にはたらくので<span class='hi'>仕事をしない＝速さ（運動エネルギー）は変わらない</span>。向きだけが変わり、<b>等速円運動</b>になる。",
+     why:"電界の力との<b>決定的な違い</b>がここです。磁界がおよぼす力は、<b>進んでいる向きに対してつねに直角</b>にしか働きません。<br><br>紐の先に石をつけてぐるぐる回すところを思い浮かべてください。紐は石を<b>横（中心向き）に引っぱるだけ</b>で、進行方向には一切押していない。だから石は速くならず、<b>向きだけが変えられて</b>円を描き続けます。ローレンツ力もこれと同じ。物理では「力と移動方向が直角なら仕事はゼロ」と言い、仕事がゼロなら運動エネルギーは変わらない＝<span class='hi'>磁界は電子の速さを変えられない</span>。論説問題はこの一文でほぼ処理できます。",
+     l:[L.lorentz,w("ローレンツ力")]},
+    {k:"円運動の半径", v:"<span class='f'>evB = mv²/r</span> より <span class='f'>r = mv / (eB)</span>。速いほど大きく曲がりきれず、磁界が強いほど小さく回る。",
+     why:"円運動を続けるには、中心へ引っぱる力（向心力）<span class='f'>mv²/r</span> がちょうど必要なだけ供給されていなければなりません。その役目を果たしているのがローレンツ力 <span class='f'>evB</span>。<b>「必要な力＝供給される力」</b>と等式にして r について解くだけです。<br><br>式を覚えていなくても、<b>速い電子は勢いがついて曲がりきれず大きな円になる</b>、<b>磁界が強いほどきつく曲げられて小さな円になる</b>——という物理的な向きさえ分かっていれば、選択肢はかなり絞れます。",
+     l:[L.lorentz]},
+    {k:"周期・角周波数", v:"<span class='f'>T = 2πm / (eB)</span>、<span class='f'>ω = eB/m</span>。<span class='hi'>速さにも半径にも無関係で、B だけで決まる</span>——サイクロトロンやマグネトロンが成り立つ理由。",
+     why:"1周の距離は <span class='f'>2πr</span>、それを速さ v で割れば1周の時間なので <span class='f'>T = 2πr / v</span>。ここに <span class='f'>r = mv/(eB)</span> を代入すると、<b>v が約分されてきれいに消えます</b>。<br><br>意味を言葉にすると、<span class='hi'>速い電子は大きい円を速く回り、遅い電子は小さい円をゆっくり回るので、一周にかかる時間は結局どちらも同じ</span>。この不思議な性質があるおかげで、サイクロトロンは<b>一定の周波数の電圧をかけ続けるだけ</b>で粒子を加速し続けられます。電子レンジのマグネトロンも同じ原理です。",
+     l:[L.lorentz,w("サイクロトロン")]},
+    {k:"偏向（放物線）", v:"平行平板に横から速さ <span class='f'>v₀</span> で入射：横は等速 <span class='f'>t = L/v₀</span>、縦は等加速度 <span class='f'>y = ½(eE/m)t²</span>。よって <span class='f'>y = eEL² / (2mv₀²)</span>。<b>放物線</b>を描く（ブラウン管の静電偏向）。",
+     why:"これは<b>ボールを水平に投げたときとまったく同じ問題</b>です。横方向には何も力が働かないので<b>ずっと等速</b>、縦方向には一定の力がかかり続けるので<b>だんだん速くなる（等加速度）</b>。この2つを別々に計算して組み合わせるのがコツで、軌跡は放物線になります。<br><br>横は等速だから通過時間は <span class='f'>t = L / v₀</span>、縦は <span class='f'>y = ½at²</span>。t が2乗で効いてくるので、<b>L も v₀ も2乗で効く</b>と分かります。昔のブラウン管テレビやオシロスコープは、この曲がり具合を電圧で操って画面上の狙った位置に電子を当てていました。",
+     l:[L.move]},
+    {k:"定数", v:"電子の電荷 <span class='f'>e = 1.602×10⁻¹⁹ C</span>、質量 <span class='f'>m = 9.11×10⁻³¹ kg</span>。問題文に与えられるので暗記は不要。",
+     why:"この2つは<b>必ず問題文に書いてあります</b>ので、覚える必要はありません。むしろ気をつけるのは指数の扱いで、<span class='f'>10⁻¹⁹ × 10⁴ = 10⁻¹⁵</span> のような計算を落ち着いてやること。<br><br>電卓が使えない試験なので、<b>先に数字部分だけ計算し、指数はあとで足し引きする</b>と間違えにくくなります。"},
+    {k:"見分け方", v:"<b>電界だけ</b> → 直線加速か放物線。<b>磁界だけ</b> → 等速円運動。<b>両方</b> → らせん運動やサイクロイド（マグネトロン）。まずどちらの問題かを判別する。",
+     why:"問題文を読んだらまず<b>「電界の話か、磁界の話か」を仕分ける</b>。ここを間違えなければ、使う式は自動的に決まります。<br><br><b>電界だけ</b>なら、力は進行方向と関係なく一定の向きにかかるので、正面から入れば直線加速、横から入れば放物線。<b>磁界だけ</b>なら、力はつねに直角なので等速円運動。<b>両方かかっている</b>ときは、電界で加速されながら磁界で曲げられるので、らせん状やサイクロイド状の複雑な軌跡になります（マグネトロンの問題がこれ）。"}
+  ],
+  qs:[
+    {q:"一様な磁界中に、磁界の向きと垂直に電子が飛び込んだ。その後の電子の運動として正しいものはどれか。",
+     c:["磁界から力を受けて加速され、速さが増していく","速さを変えずに等速円運動をする","力を受けず、そのまま直進する","減速していき、やがて静止する"],
+     a:1,
+     e:"ローレンツ力 <span class='f'>F = evB</span> は<b>常に速度と直角</b>にはたらきます。力と移動方向が直角ということは<span class='hi'>仕事をしない</span>ということなので、運動エネルギーすなわち速さは変化しません。向きだけが曲げられ続けて等速円運動になる。半径は <span class='f'>r = mv/(eB)</span>、周期は <span class='f'>T = 2πm/(eB)</span> です。<b>「磁界は電子の速さを変えられない」</b>——この一文で論説問題はほぼ処理できます。",
+     s:{t:"H28 問12（ローレンツ力）／ H30 問12", u:"https://denken-ou.com/rironh28-12/"}},
+
+    {q:"磁界中で等速円運動している電子について、磁束密度 B を2倍、速さ v を2倍にしたとき、円運動の半径 r はどうなるか。",
+     c:["変わらない","2倍になる","4倍になる","2分の1になる"],
+     a:0,
+     e:"<span class='f'>r = mv / (eB)</span> なので、分子の v と分母の B が同じ倍率で増えれば<b>相殺されて変わりません</b>。ついでに押さえておくと、周期 <span class='f'>T = 2πm/(eB)</span> は<span class='hi'>速さにも半径にもよらず、B だけで決まります</span>。速い電子は大きい円を速く回り、遅い電子は小さい円をゆっくり回って、一周にかかる時間は同じ。これがサイクロトロンで加速し続けられる理由です。",
+     s:{t:"頻出パターン（円運動）", u:"https://denken-ou.com/rironr3-12/"}},
+
+    {q:"静止していた電子を、電位差 V [V] で加速したときの速さ v を表す式はどれか。電子の電荷を e、質量を m とする。",
+     c:["v = √(2eV/m)","v = 2eV/m","v = √(eV/2m)","v = eV/m"],
+     a:0,
+     e:"電界がした仕事 <span class='f'>eV</span> が、すべて運動エネルギー <span class='f'>½mv²</span> に変わります。<span class='f'>eV = ½mv²</span> を v について解いて <span class='f'>v = √(2eV/m)</span>。<span class='hi'>加速電圧を4倍にしても速さは2倍にしかならない</span>（√に比例）という感覚を持っておくと、選択肢の吟味が速くなります。ちなみに <span class='f'>½mv²</span> の 2 が √ の中に上がってくるので「2eV」——形で覚えても構いません。",
+     s:{t:"H27 問12（真空管を通る電子）", u:"https://denken-ou.com/rironh27-12/"}},
+
+    {q:"極板間の距離が 5 mm、極板間の電圧が 100 V の平行平板電極がある。極板間にある電子が受ける力の大きさはおよそいくらか。電子の電荷の大きさを 1.6×10⁻¹⁹ C とする。",
+     c:["3.2×10⁻¹⁵ N","3.2×10⁻¹⁷ N","1.6×10⁻¹⁵ N","8.0×10⁻¹⁶ N"],
+     a:0,
+     e:"まず電界の強さ <span class='f'>E = V/d</span>。<span class='hi'>d を m に直すのが唯一の落とし穴</span>で、5 mm = 5×10⁻³ m。<span class='f'>E = 100 / 5×10⁻³ = 2.0×10⁴ V/m</span>。次に <span class='f'>F = eE = 1.6×10⁻¹⁹ × 2.0×10⁴ = 3.2×10⁻¹⁵ N</span>。5 のまま計算すると 3.2×10⁻¹⁸ になり、これが誤答の選択肢として必ず用意されています。向きは、電子が負電荷なので<b>電界の向きとは逆</b>（低電位側の極板から高電位側の極板へ引かれる）。",
+     s:{t:"R07下 問12", u:"https://denken-ou.com/rironr7-2-12/"}},
+
+    {q:"平行平板電極の間に、極板と平行に速さ v₀ で電子を入射させた。極板の長さを L とするとき、電子が極板間を通過する間の偏向量 y は何に比例（反比例）するか。",
+     c:["L に比例し、v₀ に反比例する","L² に比例し、v₀² に反比例する","L² に比例し、v₀ に反比例する","L に比例し、v₀² に反比例する"],
+     a:1,
+     e:"運動を2方向に分けて考えます。<b>横方向</b>は力を受けないので等速で、通過時間は <span class='f'>t = L / v₀</span>。<b>縦方向</b>は一定の力 <span class='f'>eE</span> を受けるので等加速度運動で <span class='f'>y = ½ (eE/m) t²</span>。t を代入して <span class='f'>y = eEL² / (2mv₀²)</span> となり、<span class='hi'>L の2乗に比例、v₀ の2乗に反比例</span>。軌跡は放物線で、これがブラウン管（CRT）の静電偏向の原理です。「t が2乗で効くから L も v₀ も2乗」と理解しておけば導けます。",
+     s:{t:"R01 問12 ／ R06上 問12", u:"https://denken-ou.com/rironr6-1-12/"}}
+  ]
+},
+{
+  id:"semi", no:"04", name:"半導体とダイオード", seat:"問11",
+  cost:4, pri:"問11の指定席",
+  lead:"問11はほぼ毎回ここから出ます。「5価→n形→電子」「3価→p形→正孔」の対応と、各種ダイオードの用途を押さえるのが本体。整流の平均値だけ計算が絡みます。",
+  points:[
+    {k:"真性半導体", v:"不純物を含まない Si・Ge（<b>4価</b>）。<span class='hi'>温度が上がると導電率が上がる（抵抗率が下がる）</span>——金属と逆で、これが試験のねらい目。サーミスタはこの性質の応用。",
+     why:"シリコンは<b>腕（価電子）を4本</b>持っていて、隣の原子と手をつなぎ合って（共有結合）びっしり固まっています。全員がしっかり手を握っているので<b>動ける電子がいない</b>——冷えているシリコンはほとんど絶縁体です。<br><br>ここに熱を加えると、揺さぶられて<b>手が離れる場所が出てきます</b>。離れた電子は自由に動けるようになり、抜けたあとには穴（正孔）が残る。つまり<b>温めるほど運び屋が増えて電気が流れやすくなる</b>。<br><br>金属はこの逆で、温めると原子の振動が激しくなって電子の通行を邪魔するので抵抗が増えます。<span class='hi'>半導体は負の温度係数、金属は正の温度係数</span>——この対比がそのまま出題されます。サーミスタ（温度センサ）はこの性質を利用したものです。",
+     l:[L.semi,w("真性半導体"),w("半導体")]},
+    {k:"n形半導体", v:"4価に<b>5価</b>（リン P・ヒ素 As・アンチモン Sb）を加える。加えた不純物を<b>ドナー</b>、多数キャリヤは<b>電子</b>。",
+     why:"4本腕のシリコンの中に、<b>腕が5本</b>のリンを1個だけ紛れ込ませます。4本は周りのシリコンと手をつなげますが、<b>5本目は相手がいなくて余ってしまう</b>。<br><br>この余った電子は誰にも束縛されていないので、わずかな熱ですぐ離れて自由に動き回れます。つまり<b>最初から運び屋（キャリヤ）が用意された状態</b>。電子を「与える」側なので、加えた不純物をドナー（donor＝提供者）と呼びます。<span class='hi'>5価 → 余る → 電子 → n形（negative）</span>と一本道でつながります。",
+     l:[L.semi]},
+    {k:"p形半導体", v:"4価に<b>3価</b>（ホウ素 B・アルミニウム Al・インジウム In・ガリウム Ga）を加える。加えた不純物を<b>アクセプタ</b>、多数キャリヤは<b>正孔</b>。",
+     why:"今度は<b>腕が3本</b>のホウ素を混ぜます。手をつなぐ相手が1つ足りず、<b>穴が空いた状態</b>になる。<br><br>ここに隣の電子が移ってくると穴は埋まりますが、こんどは<b>その隣に穴ができます</b>。さらに次の電子が移れば穴はまた隣へ——と、穴が次々にずれていく。この様子を外から見ると、<b>プラスの粒が動いているのとまったく同じ</b>に見えます。これが正孔（ホール）の正体で、実体は「電子の抜け殻の玉突き」です。<br><br>電子を「受け取る」側なので不純物はアクセプタ（acceptor）。<span class='hi'>3価 → 足りない → 正孔 → p形（positive）</span>。",
+     l:[L.semi]},
+    {k:"よく出る注意", v:"n形もp形も<span class='hi'>全体としては電気的に中性</span>。キャリヤが増えても原子核の正電荷と釣り合っているため。「n形は負に帯電」は誤り。",
+     why:"n形は電子が余っているのだから負に帯電しているはず——と考えたくなりますが、<b>違います</b>。<br><br>リンを1個入れたとき、増えたのは電子1個だけではありません。<b>リンの原子核が持つ＋の電荷も一緒に入ってきています</b>。動ける電子が1個増えたのと同時に、その場に居座る＋の電荷も1個増えているので、<b>全体では釣り合ったまま</b>。<br><br>増えたのは「電気の量」ではなく「<b>動ける</b>電気の量」だけ、と理解してください。この肢はほぼ毎回まぎれ込む定番のひっかけです。",
+     l:[L.semi]},
+    {k:"pn接合", v:"接合部にキャリヤのない<b>空乏層</b>ができ、拡散電位（電位障壁）が生じる。順方向＝<b>p側に＋</b>で空乏層が薄くなり電流が流れる。逆方向＝空乏層が厚くなり流れない。",
+     why:"p形とn形をくっつけると、境目では<b>n側の電子とp側の正孔が出会って消え合います</b>（再結合）。その結果、境目の付近だけ<b>運び屋がまったくいない層</b>ができる。これが空乏層です。<br><br>消えたあとには動けないイオンの電荷だけが取り残されるので、<b>境目に電位の坂（電位障壁）ができます</b>。この坂が、それ以上キャリヤが行き来するのを止めているわけです。<br><br>ここでp側に＋の電圧をかけると<b>坂が低くなって</b>キャリヤが乗り越えられるようになり、電流が流れる（順方向）。逆向きにかけると<b>坂がさらに高くなり空乏層も厚くなって</b>まったく流れない（逆方向）。<span class='hi'>ダイオードもトランジスタも太陽電池も、すべてこの1つの構造の応用</span>です。",
+     l:[L.diode,w("Pn接合"),w("空乏層")]},
+    {k:"定電圧（ツェナー）", v:"<b>逆方向</b>で使い、降伏領域（ツェナー降伏・なだれ降伏）では<span class='hi'>電流が変わっても電圧がほぼ一定</span>。基準電圧源・過電圧保護。",
+     why:"逆方向には電流が流れないはずですが、電圧を上げ続けていくと<b>ある電圧で急に流れ出します</b>（降伏）。壊れたように聞こえますが、電流さえ抵抗で制限しておけば<b>壊れずに何度でも使えます</b>。<br><br>おいしいのはこの領域の特性で、<b>グラフがほぼ垂直</b>になっている。垂直ということは、<span class='hi'>電流がどれだけ変わっても電圧はほとんど動かない</span>ということ。だから「何があってもこの電圧」という基準として使えます。電源の基準電圧や、過大電圧から回路を守るクランプに使われます。",
+     l:[L.diode,w("ツェナーダイオード")]},
+    {k:"可変容量（バラクタ）", v:"<b>逆方向</b>で使う。逆電圧を大きくすると空乏層が厚くなり、<span class='f'>C = εS/d</span> の d が増えて<span class='hi'>静電容量が小さくなる</span>。同調回路の電子同調。",
+     why:"空乏層は<b>キャリヤがいない＝電気を通さない層</b>でした。ということは、<b>電気を通す領域（p形とn形）で絶縁層をはさんだ構造</b>——これはコンデンサそのものです。<br><br>そして逆電圧を強くすると空乏層は厚くなる。コンデンサでいえば<b>極板の間隔 d が広がる</b>ということなので、<span class='f'>C = εS/d</span> より容量は<b>小さく</b>なります。<br><br>つまり<b>電圧で容量を変えられるコンデンサ</b>。LC同調回路のCをこれにすれば、つまみを回さずに電圧だけで受信周波数を変えられる——ラジオやテレビの電子同調がこれです。",
+     l:[L.diode,w("バリキャップ")]},
+    {k:"発光ダイオード", v:"<b>順方向</b>で使う。GaAs・GaN など<b>化合物半導体</b>を用いる（Si では発光しにくい）。逆に光を受けて起電力を出すのが太陽電池・フォトダイオード。",
+     why:"順方向に電流を流すと、接合部で<b>電子と正孔が出会って消えます</b>。このとき電子が持っていた余分なエネルギーがどこかへ行かなければならない。<br><br>シリコンではそれが<b>熱</b>になってしまうのですが、GaAs（ガリウムヒ素）やGaN（窒化ガリウム）といった化合物半導体では<b>光として飛び出します</b>。しかも出てくる光の色は材料で決まるので、材料を選べば赤・緑・青がつくれる。青色LEDが難しかったのはこの材料（GaN）の実現が難しかったからです。<br><br><b>光起電力効果はこの逆向き</b>——光を入れて電気を取り出すのが太陽電池、と対で覚えると整理できます。",
+     l:[L.diode,w("発光ダイオード")]},
+    {k:"整流の平均値", v:"正弦波の最大値を Vm とすると、単相<b>半波</b>は <span class='f'>Vm/π ≒ 0.318 Vm</span>、単相<b>全波</b>は <span class='f'>2Vm/π ≒ 0.637 Vm</span>。<span class='hi'>全波は半波のちょうど2倍</span>。",
+     why:"平均値とは<b>「波形が囲む面積 ÷ 時間」</b>のこと。正弦波の山ひとつ分の面積を積分すると <span class='f'>2Vm</span> になります。<br><br><b>半波整流</b>は、1周期（<span class='f'>2π</span>）のあいだに山が1つしか出ないので <span class='f'>2Vm / 2π = Vm/π</span>。<b>全波整流</b>は下側の山もひっくり返して使うので山が2つ入り、ちょうど<b>2倍</b>の <span class='f'>2Vm/π</span> になります。<br><br>丸暗記でも構いませんが、この作りを知っていれば<b>どちらがどちらか迷わなくなります</b>。なお <span class='f'>Vm/√2</span> は実効値で、まったく別物なので混同しないこと。",
+     l:[L.diode,w("整流器")]}
+  ],
+  qs:[
+    {q:"n形半導体の説明として正しいものはどれか。",
+     c:["4価のシリコンに3価の不純物を加えたもので、多数キャリヤは正孔である",
+        "4価のシリコンに5価の不純物を加えたもので、多数キャリヤは電子である",
+        "電子が過剰なので、全体として負に帯電している",
+        "多数キャリヤは正孔で、加えた不純物をアクセプタという"],
+     a:1,
+     e:"<span class='hi'>5価（リン・ヒ素・アンチモン）＝ドナー → n形 → 多数キャリヤは電子</span>、<span class='hi'>3価（ホウ素・アルミニウム・インジウム）＝アクセプタ → p形 → 多数キャリヤは正孔</span>。この2行がそのまま問題になります。3番目は毎回まぎれ込む定番のひっかけで、<b>不純物半導体も全体としては電気的に中性</b>です——自由に動けるキャリヤが増えただけで、その分の正電荷は原子核側に残っているため。",
+     s:{t:"R03 問11 ／ H28 問11", u:"https://denken-ou.com/rironr3-11/"}},
+
+    {q:"可変容量ダイオード（バラクタダイオード）に加える逆方向電圧を大きくしていくと、静電容量はどうなるか。",
+     c:["大きくなる","小さくなる","変わらない","一度大きくなってから小さくなる"],
+     a:1,
+     e:"逆方向電圧を大きくすると<b>空乏層が厚くなります</b>。空乏層はキャリヤのない絶縁層なので、これは平行平板コンデンサの極板間隔 d が広がるのと同じこと。<span class='f'>C = εS/d</span> より <span class='hi'>d が増えれば C は減る</span>。電圧で容量を変えられるので、LC同調回路の可変容量として使い、ラジオやテレビの電子同調を実現します。",
+     s:{t:"R02 問11", u:"https://denken-ou.com/rironr2-11/"}},
+
+    {q:"定電圧ダイオード（ツェナーダイオード）の使い方として正しいものはどれか。",
+     c:["順方向に電圧を加え、順電圧がほぼ一定になる領域を使う",
+        "逆方向に電圧を加え、降伏する領域を使う",
+        "光を当てて起電力を得る",
+        "逆方向の静電容量の変化を利用する"],
+     a:1,
+     e:"<b>逆方向</b>に電圧を加えていくと、ある電圧（ツェナー電圧）で急に電流が流れ出します（ツェナー降伏／なだれ降伏）。この領域では<span class='hi'>電流が大きく変わっても端子電圧はほとんど変わらない</span>ので、基準電圧源や過電圧保護に使えます。4番目は可変容量ダイオード、3番目は太陽電池の説明です。ダイオード系の問題は<b>「順方向で使うか、逆方向で使うか」</b>を先に仕分けると整理できます（LEDは順方向、ツェナーとバラクタは逆方向）。",
+     s:{t:"R07下 問11（各ダイオードの電圧の向き）", u:"https://denken-ou.com/rironr7-2-11/"}},
+
+    {q:"真性半導体の温度を上げていくと、その導電率はどうなるか。",
+     c:["大きくなる","小さくなる","変わらない","はじめ小さくなり、その後大きくなる"],
+     a:0,
+     e:"熱エネルギーで共有結合が切れ、<b>電子と正孔の対が増えます</b>。動けるキャリヤが増えるので導電率は上がり、抵抗率は下がる。<span class='hi'>金属は温度が上がると抵抗が増える（正の温度係数）のに対し、半導体は逆（負の温度係数）</span>——ここが対比で問われます。この性質を積極的に利用したのがサーミスタ（温度センサ）です。",
+     s:{t:"R03 問11 ／ H28 問11", u:"https://denken-ou.com/rironr3-11/"}},
+
+    {q:"pn接合に光を当てると、p形側が正、n形側が負の電位となって起電力が生じる。この現象を何というか。",
+     c:["外部光電効果","光起電力効果","光導電効果","ホール効果"],
+     a:1,
+     e:"太陽電池・フォトダイオードの原理で、<b>光起電力効果</b>です。光がらみの3効果は結果で区別します：<span class='hi'>電子が金属から飛び出す＝外部光電効果（光電管）／抵抗が下がる＝光導電効果（CdSセル）／起電力が出る＝光起電力効果（太陽電池）</span>。この3つは選択肢に並べて出されるので、セットで頭に入れておくと確実に1点になります。",
+     s:{t:"R01 問11（太陽電池）", u:"https://denken-ou.com/rironr1-11/"}},
+
+    {q:"抵抗負荷の単相半波整流回路で、入力する正弦波交流電圧の最大値を Vm とするとき、出力電圧の平均値はいくらか。",
+     c:["Vm / π","2Vm / π","Vm / √2","Vm / 2"],
+     a:0,
+     e:"半波整流は半周期しか出力がないので、平均値は <span class='f'>Vm/π ≒ 0.318 Vm</span>。全波整流（ブリッジ）なら両方の半周期が使えて、ちょうど2倍の <span class='f'>2Vm/π ≒ 0.637 Vm</span> です。<span class='hi'>「全波は半波の2倍」</span>とだけ覚えておけば、どちらを聞かれても対応できます。<span class='f'>Vm/√2</span> は実効値なので、平均値と混同しないこと。",
+     s:{t:"頻出パターン（整流回路）", u:"https://denken-ou.com/riron/"}}
+  ]
+},
+{
+  id:"tr", no:"05", name:"トランジスタとFET", seat:"問11・問13",
+  cost:4, pri:"比較表で丸ごと取る",
+  lead:"バイポーラとFETを1枚の比較表にすると、論説問題はほぼ処理できます。計算は α と β の変換、そして小信号等価回路の電圧増幅度の2つだけ。",
+  points:[
+    {k:"バイポーラ（BJT）", v:"<b>電流</b>でコレクタ電流を制御。<span class='hi'>電子と正孔の両方</span>が動作に関与するから「バイ（2つの）ポーラ」。npn形とpnp形。",
+     why:"npn形は、<b>n形・p形・n形の3層を重ねた構造</b>で、真ん中のp形（ベース）を極端に薄く作ってあります。<br><br>エミッタからベースへ電子を送り込むと、ベースが薄すぎるために<b>ほとんどの電子はそこで止まらず、勢いあまってコレクタまで突き抜けてしまう</b>。ベースに流し込んだわずかな電流に対して、何十倍もの電流がエミッタ→コレクタに流れる。これが増幅の正体です。<br><br>水道の蛇口で、<b>ハンドルを少し回す（ベース電流）だけで大量の水が出る（コレクタ電流）</b>イメージ。ここで制御しているのが「<b>電流</b>」であることが、次に出てくるFETとの決定的な違いです。",
+     l:[L.diode,w("バイポーラトランジスタ")]},
+    {k:"α と β", v:"<span class='f'>α = Ic/Ie</span>（ベース接地）、<span class='f'>β = Ic/Ib</span>（エミッタ接地）。<span class='f'>Ie = Ib + Ic</span> から <span class='f'>β = α/(1−α)</span>、<span class='f'>α = β/(1+β)</span>。<span class='hi'>α が 1 に近いほど β は急激に大きくなる</span>。",
+     why:"エミッタから出発した電子のうち、<b>98〜99%はコレクタまで届き、残りのわずか1〜2%だけがベースへ漏れます</b>。<br><br><span class='f'>α</span> は「送り出したうち<b>コレクタに届いた割合</b>」なので0.98など1に近い値。<span class='f'>β</span> は「<b>漏れた分</b>に対する届いた分の比」なので、漏れが少ないほど跳ね上がります。<br><br>関係式はどちらも <span class='f'>Ie = Ib + Ic</span>（出た電流＝分かれた2つの和）という当たり前の1本から導けます。両辺を Ic で割れば <span class='f'>1/α = 1/β + 1</span>。<b>α = 0.98 なら β = 49、0.99 なら 99、0.995 なら 199</b>——<span class='hi'>1に近づくほど爆発的に増える</span>のが感覚として大事です。",
+     l:[L.tramp]},
+    {k:"エミッタ接地", v:"<b>最も一般的</b>。電圧も電流も大きく増幅し、<span class='hi'>入出力の位相が反転</span>する。",
+     why:"「○○接地」とは、<b>入力と出力で共通の基準にしている端子はどれか</b>という意味です。エミッタ接地はエミッタを共通にして、ベースから入れてコレクタから取り出します。<br><br><b>なぜ位相が反転するのか</b>——ベース電流が増えるとコレクタ電流が増えます。コレクタ電流が増えると、コレクタ抵抗での電圧降下が大きくなる。すると<b>コレクタの電位（＝出力）はむしろ下がります</b>。つまり<span class='hi'>入力が上がると出力が下がる＝位相が180°反転</span>。<br><br>電圧も電流も両方増幅できる唯一の接地方式なので、増幅といえばまずこれです。",
+     l:[L.tramp]},
+    {k:"ベース接地", v:"電流増幅度は<b>ほぼ1（1より小さい）</b>だが電圧増幅度は大きい。入力インピーダンスが小さく、<b>高周波増幅</b>向き。位相は同相。",
+     why:"エミッタから入れてコレクタから取り出す形。エミッタに入れた電流のうちコレクタに出てくるのは <span class='f'>α</span> 倍＝<b>0.98倍などで、必ず1より小さい</b>。だから電流はまったく増えません。<br><br>ではなぜ使うのか。エミッタは入力インピーダンスが低いので<b>大きな電流を受け入れやすく</b>、それを高い抵抗で受けると電圧としては大きく増幅できます。さらに<b>高い周波数まで特性が落ちにくい</b>ので、高周波増幅の用途で使われます。<br><br>3方式のうち<span class='hi'>「電流が増えないのはベース接地、電圧が増えないのはコレクタ接地」</span>と対で覚えると混同しません。",
+     l:[L.tramp]},
+    {k:"コレクタ接地", v:"エミッタホロワ。<b>電圧増幅度がほぼ1</b>、<span class='hi'>入力インピーダンスが大きく出力インピーダンスが小さい</span>ので<b>インピーダンス変換</b>に使う（オペアンプのボルテージフォロワと同じ役割）。位相は同相。",
+     why:"出力をエミッタから取り出します。エミッタの電位は、<b>ベースの電位より常に VBE（約0.6V）だけ低い値にくっついて動きます</b>。ベースが1V上がればエミッタも1V上がる——入力に「追従（follow）」するので<b>エミッタホロワ</b>と呼ばれます。<br><br>電圧はまったく増えないのに使う理由は、<b>電流が β 倍取れる</b>から。同じ電圧でも力強く、重い負荷を駆動できる出力になります。<br><br>これは<span class='hi'>オペアンプのボルテージフォロワとまったく同じ発想</span>です。片方を理解すれば両方分かるので、セットで押さえてください。",
+     l:[L.tramp,w("コレクタ接地回路")]},
+    {k:"FET", v:"<b>電圧</b>でドレーン電流を制御。<span class='hi'>多数キャリヤだけ</span>が関与（ユニポーラ）。入力インピーダンスが非常に大きく、雑音が少ない。",
+     why:"ゲートに電圧をかけると、その<b>電界の力でチャネル（電流の通り道）の太さが変わります</b>。ホースを外から指で挟んで水の量を加減するイメージで、<b>ゲート自身には電流がまったく流れません</b>。<br><br>電流を流さなくていいということは、<span class='hi'>信号源から電力をもらわずに済む＝入力インピーダンスが極めて高い</span>ということ。相手の回路に負担をかけません。<br><br>また、バイポーラは電子と正孔の両方が関わりますが、FETは<b>多数キャリヤ1種類だけ</b>で動きます（ユニポーラ）。少数キャリヤのランダムな出入りがないぶん<b>雑音も少ない</b>。微弱信号の入力段に好んで使われるのはこのためです。",
+     l:[L.fet,w("電界効果トランジスタ")]},
+    {k:"電極の対応", v:"ゲート ↔ ベース／ドレーン ↔ コレクタ／ソース ↔ エミッタ。<b>ソース接地</b>がエミッタ接地に相当。",
+     why:"名前が違うだけで<b>役割は一対一で対応しています</b>。ソース（source＝源）からキャリヤが出て、ドレーン（drain＝排水口）へ流れ込み、ゲート（gate＝門）がその量を調節する——<b>英単語の意味そのまま</b>なので、覚えるというより読めば分かります。<br><br>対応が分かれば、<b>ソース接地＝エミッタ接地</b>（位相反転して大きく増幅）、<b>ドレーン接地＝コレクタ接地</b>（ソースホロワ）と、バイポーラで覚えた知識をそのまま流用できます。",
+     l:[L.fet]},
+    {k:"接合形とMOS形", v:"<b>接合形（JFET）</b>：ゲートを<b>逆バイアス</b>し、空乏層でチャネルを絞る。<span class='hi'>デプレッション形のみ</span>。<b>MOS形</b>：ゲートが酸化膜で絶縁。<span class='hi'>エンハンスメント形とデプレッション形の両方がある</span>。",
+     why:"<b>接合形（JFET）</b>は、ゲートとチャネルの間がpn接合になっています。ここを<b>逆バイアス</b>すると空乏層が広がり、通り道を外側から締めつけて電流を減らす。つまり<b>ゲート電圧0のときすでに電流が流れていて、そこから絞ることしかできない</b>——これがデプレッション（depletion＝空乏／減らす）形です。<br><br><b>MOS形</b>はゲートが酸化膜で完全に絶縁されているので、逆バイアスの制約がありません。だから<b>ゲートを＋にしてチャネルを呼び込む</b>使い方もできる——これがエンハンスメント（enhancement＝増強）形。だから<span class='hi'>MOS形だけが両方の形を持てる</span>わけです。試験で問われるのはまさにこの点。",
+     l:[L.fet,w("MOSFET")]},
+    {k:"相互コンダクタンス", v:"<span class='f'>gm = ΔId / ΔVgs</span>［S（ジーメンス）］。小信号等価回路では <span class='f'>id = gm·vgs</span> の電流源とみなし、電圧増幅度は <span class='f'>Av = −gm·RD</span>（位相反転）。",
+     why:"<b>「ゲート電圧を1V変えたら、ドレーン電流は何A変わるか」</b>という“効きの良さ”を表す数字です。電流÷電圧なので単位はコンダクタンス（抵抗の逆数）と同じ<b>ジーメンス［S］</b>。<br><br>回路計算では、FETを<b>「gm×入力電圧」だけ流す電流源</b>に置き換えて考えます（小信号等価回路）。その電流がドレーン抵抗 RD を流れれば、オームの法則で電圧になる。だから <span class='f'>|Av| = gm × RD</span>。<br><br>式を忘れても<b>単位の辻褄で思い出せます</b>——S（＝1/Ω）にΩを掛ければ無次元＝増幅度。マイナス符号はソース接地＝エミッタ接地相当なので位相反転する、という意味です。",
+     l:[L.fet,L.eq]}
+  ],
+  qs:[
+    {q:"ベース接地電流増幅率 α = 0.98 のトランジスタのエミッタ接地電流増幅率 β はいくらか。",
+     c:["49","50","98","0.49"],
+     a:0,
+     e:"<span class='f'>β = α/(1−α) = 0.98 / (1 − 0.98) = 0.98 / 0.02 = 49</span>。導出も簡単で、<span class='f'>Ie = Ib + Ic</span> の両辺を Ic で割ると <span class='f'>1/α = 1/β + 1</span>。ここから両方の式が出ます。<span class='hi'>α が 1 にわずかに近づくだけで β が跳ね上がる</span>のが感覚として大事で、α = 0.99 なら β = 99、α = 0.995 なら β = 199 になります。分母の引き算を落とすと 50 や 49.98 といった誤答に誘導されます。",
+     s:{t:"R07上 問13（電流増幅率）", u:"https://denken-ou.com/rironr7-1-13/"}},
+
+    {q:"電界効果トランジスタ（FET）とバイポーラトランジスタの比較として、誤っているものはどれか。",
+     c:["FETは電圧で、バイポーラは電流で出力電流を制御する",
+        "FETは多数キャリヤだけが動作に関与するユニポーラ素子である",
+        "FETの入力インピーダンスはバイポーラトランジスタより小さい",
+        "FETのゲート・ドレーン・ソースは、バイポーラのベース・コレクタ・エミッタに対応する"],
+     a:2,
+     e:"逆で、<b>FETの入力インピーダンスの方がはるかに大きい</b>のが正解です。接合形はゲートを逆バイアスして使い、MOS形はゲートが酸化膜で絶縁されているため、<span class='hi'>入力側にほとんど電流が流れません</span>。この性質から、信号源に負担をかけず、雑音も少ない。バイポーラはベース電流を必要とするので、入力インピーダンスは低くなります。比較問題は<b>制御方式／キャリヤ／入力インピーダンス／電極の対応</b>の4点セットで出ます。",
+     s:{t:"R06上 問11 ／ R06下 問11", u:"https://denken-ou.com/rironr6-1-11/"}},
+
+    {q:"コレクタ接地増幅回路（エミッタホロワ）の特徴として正しいものはどれか。",
+     c:["電圧増幅度がほぼ1で、入力インピーダンスが大きく出力インピーダンスが小さい",
+        "電圧増幅度が非常に大きく、入力と出力の位相が反転する",
+        "電流増幅度がほぼ1で、高周波増幅に適する",
+        "入力インピーダンスが小さく、出力インピーダンスが大きい"],
+     a:0,
+     e:"3つの接地方式は<b>役割で覚えます</b>。<span class='hi'>エミッタ接地＝主力の増幅（電圧も電流も増幅・位相反転）／ベース接地＝電流増幅度ほぼ1・高周波向き／コレクタ接地＝電圧増幅度ほぼ1・インピーダンス変換</span>。2番目はエミッタ接地、3番目はベース接地の説明です。コレクタ接地は「増幅しないのに使う」のがポイントで、出力インピーダンスが低いため<b>低い抵抗の負荷を駆動できる</b>——オペアンプのボルテージフォロワとまったく同じ考え方です。",
+     s:{t:"R05上 問13 ／ R07上 問18", u:"https://denken-ou.com/rironr5-1-13/"}},
+
+    {q:"接合形電界効果トランジスタ（接合形FET）の動作についての説明として正しいものはどれか。",
+     c:["ゲートに順方向電圧を加えて使用する",
+        "ゲートに逆方向電圧を加え、空乏層でチャネルの幅を変えてドレーン電流を制御する",
+        "ゲートが酸化膜によって絶縁されている",
+        "エンハンスメント形しか存在しない"],
+     a:1,
+     e:"接合形FETは<b>pn接合を逆バイアス</b>して使い、逆電圧を大きくするほど空乏層が広がってチャネル（電流の通り道）が狭まり、ドレーン電流が減ります。つまり<span class='hi'>ゲート電圧が0でも電流が流れていて、逆電圧で絞っていく＝デプレッション形</span>。ゲートが酸化膜で絶縁されているのは<b>MOSFET</b>で、そちらは<b>エンハンスメント形とデプレッション形の両方</b>があります。「接合形＝デプレッションのみ、MOS形＝両方」が定番の出題点。",
+     s:{t:"R05下 問11 ／ R04上 問11", u:"https://denken-ou.com/rironr5-2-11/"}},
+
+    {q:"相互コンダクタンス gm = 4 mS のFETを、ドレーン抵抗 RD = 2.5 kΩ で用いたソース接地増幅回路の電圧増幅度の大きさはいくらか。",
+     c:["10","100","1.6","0.4"],
+     a:0,
+     e:"簡易小信号等価回路では、FETは <span class='f'>id = gm·vgs</span> の<b>電流源</b>に置き換わります。この電流が RD を流れるので出力電圧は <span class='f'>vo = −gm·vgs·RD</span>、したがって <span class='f'>|Av| = gm·RD = 4×10⁻³ × 2.5×10³ = 10</span>。<span class='hi'>gm の単位はジーメンス［S］＝コンダクタンス</span>で、抵抗を掛けると無次元（増幅度）になる——単位の辻褄で式を思い出せます。マイナス符号は<b>位相が反転する</b>ことを意味し、ソース接地はエミッタ接地に相当するので当然の結果です。",
+     s:{t:"R03 問13（FETの簡易小信号等価回路）", u:"https://denken-ou.com/rironr3-13/"}}
+  ]
+},
+{
+  id:"amp", no:"06", name:"増幅回路・帰還・発振", seat:"問13・問18",
+  cost:3, pri:"dBは確実に取る",
+  lead:"デシベルの足し算は落とせない1点。負帰還と発振条件は論説の常連で、内容も短いのでここも実質暗記です。バイアスと電力増幅の級は余力があればで構いません。",
+  points:[
+    {k:"デシベル", v:"電圧利得 <span class='f'>G = 20 log₁₀(Vo/Vi)</span>［dB］、電力利得は <span class='f'>10 log₁₀(Po/Pi)</span>。<span class='hi'>電圧は20、電力は10</span>。",
+     why:"増幅器を3段つなぐと倍率は<b>掛け算</b>で効いてきます。10倍×20倍×5倍＝1000倍——数字が大きくなりすぎて扱いにくい。そこで<b>対数（log）にすると掛け算が足し算に変わる</b>ので、桁の大きい比を素直に扱えます。これがデシベルを使う理由です。<br><br><b>なぜ電圧だけ20倍なのか。</b>もともとdBは電力の比のために作られた単位で <span class='f'>10 log(Po/Pi)</span> です。ところが電力は電圧の<b>2乗</b>に比例する（<span class='f'>P = V²/R</span>）。logの中の2乗は前に出せるので <span class='f'>10 log(V²) = 20 log(V)</span> となり、<b>係数が2倍の20になる</b>。丸暗記ではなくこの由来で覚えると取り違えません。",
+     l:[L.amps,w("デシベル")]},
+    {k:"暗算の種", v:"<span class='f'>log₁₀2 = 0.301</span> から <b>2倍 = 6 dB</b>、<b>10倍 = 20 dB</b>、<b>√2倍 = 3 dB</b>。これらを足し引きして作る（例：20倍 = 10倍×2倍 = 20＋6 = 26 dB）。",
+     why:"試験は電卓が使えないので、<b>この3つを覚えて足し引きで組み立てる</b>のが実戦的です。<br><br>倍率を 10 と 2 と √2 の掛け算に分解すれば、対応するdBを足すだけ。<b>20倍 = 10×2 → 20+6 = 26dB</b>、<b>40倍 = 10×2×2 → 20+6+6 = 32dB</b>、<b>100倍 = 10×10 → 40dB</b>、<b>5倍 = 10÷2 → 20−6 = 14dB</b>。<br><br>逆向き（dBから倍率）も同じ要領で、<b>60dB = 20+20+20 → 10×10×10 = 1000倍</b>。慣れると数秒で出せるようになります。",
+     l:[w("デシベル")]},
+    {k:"縦続接続", v:"<span class='hi'>増幅度は掛け算、利得［dB］は足し算</span>。多段の問題はdBに直してから足すのが速い。",
+     why:"1段目で10倍になった信号が2段目に入ってさらに20倍になるので、全体は <span class='f'>10 × 20 = 200倍</span>。<b>倍率は掛け算</b>です。<br><br>これをdBで書くと <span class='f'>20dB + 26dB = 46dB</span> と<b>足し算</b>になる。対数の性質（<span class='f'>log(AB) = logA + logB</span>）そのものです。<br><br>実務でも試験でも、多段の問題は<b>いったん全部dBに直してから足し引きする</b>のが圧倒的に速い。「全体が60dBで、1段目と2段目が分かっているとき3段目は？」という<b>引き算で問う出題</b>も定番です。",
+     l:[L.amps]},
+    {k:"負帰還の効果", v:"<b>増幅度は下がる</b>が、そのかわりに ①周波数特性が改善され<b>帯域が広がる</b> ②<b>ひずみが減る</b> ③<b>雑音が減る</b> ④素子のばらつきや温度変化に対して<b>増幅度が安定</b> ⑤入出力インピーダンスを改善できる。<span class='hi'>「増幅度を犠牲にして品質を買う」</span>と覚える。",
+     why:"出力の一部を、入力に<b>「逆向き」に</b>戻してやります。すると何が起きるか——出力が何かの拍子に大きくなりすぎると、<b>戻ってきた分が入力を打ち消して自動的に抑え込む</b>。小さくなりすぎれば逆に押し上げる。<br><br>この<b>自己修正がいつでも働いている</b>ので、トランジスタごとの性能のばらつきも、温度変化によるずれも、波形のひずみも、途中で乗った雑音も、まとめて押さえ込まれます。<br><br>代わりに払う代償が<b>増幅度の低下</b>。ただし増幅度は段数を増やせばいくらでも稼げるのに対し、安定性やひずみの少なさは後から足せません。<span class='hi'>だから実用の増幅器はほぼすべて負帰還がかかっています</span>。試験は毎回「増幅度が大きくなる」という誤りの肢を選ばせる形で出ます。",
+     l:[L.amps]},
+    {k:"発振条件", v:"増幅度 A、帰還率 β として <span class='f'>Aβ = 1</span>。<b>振幅条件</b> <span class='f'>|Aβ| = 1</span> と<b>位相条件</b>（一巡の位相差が0°＝正帰還）の<span class='hi'>両方</span>が必要。",
+     why:"負帰還のちょうど逆で、出力を<b>同じ向きに（正帰還で）</b>戻します。すると戻った分がさらに増幅されてまた戻り、<b>雪だるま式に育っていきます</b>。<br><br>身近な例が<b>ハウリング</b>——マイクをスピーカーに近づけると「キーン」と鳴り出すあれです。マイクが拾った音が増幅されてスピーカーから出て、それをまたマイクが拾う。これがまさに発振です。<br><br>ただし育ちっぱなしでは振り切れてしまうので、<b>ちょうど1倍で戻ってくれば同じ大きさの振動が続きます</b>（振幅条件 <span class='f'>|Aβ|=1</span>）。さらに、戻ってきた波の<b>山と山が重なっていないと打ち消し合ってしまう</b>ので、一巡して位相が0°に戻っていることも必要（位相条件）。<b>両方そろって初めて発振</b>します。",
+     l:[L.osc,w("発振回路")]},
+    {k:"発振回路の種類", v:"<b>LC発振</b>：ハートレー・コルピッツ（高周波）。<b>CR発振</b>：移相形・ウィーンブリッジ（低周波）。<b>水晶発振</b>：Qが極めて高く周波数安定度が最良。",
+     why:"「どの周波数で発振するか」を決める部品によって呼び名が変わるだけです。<br><br><b>LC発振</b>はコイルとコンデンサの共振を使うもので、高い周波数向き。コイルの途中から取り出すのがハートレー、コンデンサの途中から取り出すのがコルピッツ。<b>CR発振</b>は抵抗とコンデンサの遅れを使うもので、コイルが不要なぶん低い周波数を作りやすい。<br><br><b>水晶発振</b>は圧電効果（→効果の項目）で水晶を機械的に共振させます。機械的な共振は電気的な共振よりはるかに鋭く（Qが桁違いに高い）、<span class='hi'>温度や電圧が多少変わっても周波数がずれない</span>。時計やマイコンのクロックがすべて水晶なのはこのためです。",
+     l:[L.osc,w("水晶振動子")]},
+    {k:"バイアス回路", v:"<b>固定バイアス</b>は簡単だが hFE のばらつきと温度変化に弱い。<b>電流帰還バイアス</b>（エミッタ抵抗＋ブリーダ抵抗）は<span class='hi'>動作点が自動で補正される</span>ので最も安定。",
+     why:"<b>そもそもバイアスとは何か。</b>増幅したい交流信号は＋と−に振れますが、トランジスタは一方向にしか電流を流せません。そこで<b>あらかじめ適度な直流を流しておいて、その上に交流を乗せて上下させる</b>——この下駄がバイアスで、乗せる位置が<b>動作点</b>です。<br><br>動作点が中央から外れていると、波形の上か下が<b>頭打ちになって潰れます</b>（ひずみ）。だから真ん中に置き、かつそこから動かないようにしたい。<br><br><b>電流帰還バイアス</b>が安定なのは負帰還が効いているから——<span class='hi'>温度上昇 → Ic増加 → エミッタ抵抗の電圧降下が増加 → VBE が減少 → Ic が減少</span>と、勝手に押し戻してくれます。固定バイアスは抵抗1本で作れて簡単ですが、この自己修正がありません。",
+     l:[L.bias]},
+    {k:"電力増幅の級", v:"効率は <b>A級 &lt; B級 &lt; C級</b>、ひずみも同じ順に大きくなる。A級は最大50%、B級は最大78.5%でプッシュプルによりひずみを打ち消す。C級は高周波の同調増幅用。",
+     why:"違いは<b>「1周期のうち、どれだけの時間 電流を流しているか」</b>（導通角）だけです。<br><br><b>A級</b>は常に流しっぱなし。信号がないときも電気を食い続けるので<b>効率は悪い（最大50%）</b>が、波形はいちばんきれい。<b>B級</b>は半周期だけ流すので無駄が減り<b>効率78.5%</b>まで上がるが、片側しか出ないので波形が半分に欠ける。そこで<b>2つの素子で上下を分担させて合成する</b>のがプッシュプルです。<b>C級</b>はさらに短く、波形はぼろぼろですが<b>効率は最高</b>で、同調回路を通せばきれいな正弦波に戻せるので高周波送信機に使われます。<br><br><span class='hi'>効率とひずみは常にトレードオフ</span>——この一言に集約されます。",
+     l:[L.amps]}
+  ],
+  qs:[
+    {q:"入力電圧を20倍に増幅する増幅器の電圧利得はおよそいくらか。log₁₀2 = 0.301 とする。",
+     c:["26 dB","13 dB","20 dB","46 dB"],
+     a:0,
+     e:"<span class='f'>G = 20 log₁₀20 = 20 × log₁₀(10×2) = 20 × (1 + 0.301) = 26.0 dB</span>。<span class='hi'>倍率を 10 と 2 と √2 の掛け算に分解して、20 dB・6 dB・3 dB を足す</span>——これで大半の dB 問題は暗算できます。電力利得なら係数が 10 になるので 13 dB。<b>電圧は20倍、電力は10倍</b>の係数の違いが誤答選択肢の作り方になっているので、何の利得を聞かれているか毎回確認すること。",
+     s:{t:"頻出パターン（利得）", u:"https://denken-ou.com/rironr5-2-13/"}},
+
+    {q:"電圧利得がそれぞれ 20 dB、14 dB、26 dB の増幅器を縦続接続したとき、全体の電圧利得はいくらか。",
+     c:["60 dB","26 dB","40 dB","1000 dB"],
+     a:0,
+     e:"<span class='hi'>増幅度は掛け算、利得［dB］は足し算</span>なので <span class='f'>20 + 14 + 26 = 60 dB</span>。dB の便利さがまさにここで、対数にすると掛け算が足し算になります。ちなみに 60 dB は電圧で1000倍（<span class='f'>20 log₁₀1000 = 60</span>）。逆に「全体が何 dB で、そのうち1段が何 dB か」を引き算で求めさせる出題もあり、R05下 問13 がその形です。",
+     s:{t:"R05下 問13", u:"https://denken-ou.com/rironr5-2-13/"}},
+
+    {q:"負帰還増幅回路の効果として、誤っているものはどれか。",
+     c:["増幅度が大きくなる",
+        "周波数特性が改善され、増幅できる帯域幅が広がる",
+        "出力波形のひずみが減少する",
+        "素子のばらつきや温度変化に対して増幅度が安定する"],
+     a:0,
+     e:"負帰還では<b>増幅度は必ず下がります</b>。ここが唯一のデメリットで、それ以外はすべて改善される——というのが覚え方です。<span class='hi'>「増幅度を犠牲にして、安定・低ひずみ・低雑音・広帯域を買う回路」</span>。出題は決まってこの形（「誤っているものはどれか」で増幅度の肢を選ばせる）なので、確実に取りたい1点です。なお正帰還にすると増幅度は上がりますが、条件が揃うと発振します。",
+     s:{t:"R01 問13", u:"https://denken-ou.com/rironr1-13/"}},
+
+    {q:"増幅度を A、帰還率を β とするとき、発振が持続するための条件はどれか。",
+     c:["Aβ = 1（大きさが1で、一巡の位相差が0°＝正帰還）",
+        "Aβ = 0",
+        "Aβ < 1 であればよい",
+        "一巡の位相差が180°であればよい"],
+     a:0,
+     e:"発振には<b>振幅条件</b> <span class='f'>|Aβ| = 1</span> と<b>位相条件</b>（一巡したときの位相差が0°または360°、すなわち<span class='hi'>正帰還</span>）の両方が必要です。片方だけでは発振は持続しません。実際の回路では起動時に <span class='f'>|Aβ| &gt; 1</span> として振幅を成長させ、大きくなると素子の非線形性で実効的な A が下がり、自然に <span class='f'>|Aβ| = 1</span> に落ち着きます。位相差180°は<b>負</b>帰還なので、発振ではなく安定化の条件です。",
+     s:{t:"R04下 問13", u:"https://denken-ou.com/rironr4-2-13/"}},
+
+    {q:"トランジスタ増幅回路のバイアス回路のうち、周囲温度の変化や hFE のばらつきに対して動作点が最も安定なものはどれか。",
+     c:["固定バイアス回路","電流帰還バイアス回路","自己バイアス回路のうち帰還抵抗が最小のもの","バイアスを与えない回路"],
+     a:1,
+     e:"電流帰還バイアス（エミッタ抵抗とブリーダ抵抗を使う形）が最も安定です。仕組みは負帰還そのもので、<span class='hi'>温度上昇 → Ic 増加 → エミッタ抵抗の電圧降下が増加 → VBE が減少 → Ic が減少</span>と、勝手に押し戻してくれます。固定バイアスは抵抗1本で作れて簡単ですが、hFE のばらつきや温度変化がそのまま動作点のずれになるため実用回路ではあまり使われません。",
+     s:{t:"頻出パターン（バイアス）", u:"https://denken-ou.com/rironh28-13/"}},
+
+    {q:"電力増幅回路のA級・B級・C級動作について、電力効率が高い順に並べたものはどれか。",
+     c:["C級 > B級 > A級","A級 > B級 > C級","B級 > A級 > C級","3つとも同じ"],
+     a:0,
+     e:"<b>導通角（1周期のうち電流が流れている割合）が狭いほど効率は高く、そのぶんひずみも大きくなります</b>。A級＝常に導通、ひずみ最小だが効率は最大50%。B級＝半周期だけ導通、効率は最大78.5%で、<span class='hi'>プッシュプル構成にして2つの素子で上下を分担しひずみを打ち消す</span>。C級＝半周期未満、効率は最高だがひずみが大きく、同調回路と組み合わせて高周波増幅に使う。<b>効率とひずみは常にトレードオフ</b>という一言で整理できます。",
+     s:{t:"H27 問13（電力増幅回路）", u:"https://denken-ou.com/rironh27-13/"}}
+  ]
+}
+];
+
+/* ---------------- state ---------------- */
+var KEY="denken3-denshi-v1";
+var state={};
+try{state=JSON.parse(localStorage.getItem(KEY)||"{}")||{};}catch(e){state={};}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
+
+var ALL=[];
+TOPICS.forEach(function(t){
+  t.qs.forEach(function(q,i){ q.id=t.id+"-"+(i+1); q.topic=t; q.n=i+1; ALL.push(q); });
+});
+
+/* ---------------- render helpers ---------------- */
+function el(tag,cls,html){var e=document.createElement(tag);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;return e;}
+var LETTER=["ア","イ","ウ","エ","オ"];
+
+function buildQ(q,opts){
+  opts=opts||{};
+  var wrap=el("div","q");
+  wrap.id="q-"+q.id;
+  var top=el("div","q-top");
+  top.appendChild(el("span","q-no","Q"+q.n+(opts.drill?" ／ "+q.topic.name:"")));
+  top.appendChild(el("span","q-src",q.s.t));
+  wrap.appendChild(top);
+
+  var body=el("div","q-body");
+  var txt=el("div","q-text",q.q+(q.g?"<span class='fig'>"+q.g+"</span>":""));
+  body.appendChild(txt);
+
+  var optbox=el("div","opts");
+  var buttons=[];
+  q.c.forEach(function(c,i){
+    var b=el("button","opt");
+    b.type="button";
+    b.innerHTML="<span class='k'>("+LETTER[i]+")</span><span>"+c+"</span>";
+    b.addEventListener("click",function(){ pick(i); });
+    optbox.appendChild(b);
+    buttons.push(b);
   });
-  statusEl.textContent='';
-}
+  body.appendChild(optbox);
 
-/* ---------- occupancy grid ---------- */
-function ensureGrid(srcW,srcH){
-  const w=112, h=Math.max(24,Math.round(112*srcH/srcW));
-  if(w===GW&&h===GH) return;
-  GW=w; GH=h;
-  const n=GW*GH;
-  gField=new Float32Array(n); gTmp=new Float32Array(n);
-  gPrev=new Float32Array(n);  gDelta=new Float32Array(n);
-  maskTexData=new Uint8Array(n);
-  if(maskTex) maskTex.dispose();
-  maskTex=new THREE.DataTexture(maskTexData,GW,GH,THREE.LuminanceFormat,THREE.UnsignedByteType);
-  maskTex.minFilter=maskTex.magFilter=THREE.LinearFilter; maskTex.needsUpdate=true;
-  if(maskMesh) maskMesh.material.map=maskTex;
-}
+  var ans=el("div","ans");
+  ans.hidden=true;
+  body.appendChild(ans);
+  wrap.appendChild(body);
 
-function ingest(src,sw,sh){
-  ensureGrid(sw,sh);
-  for(let y=0;y<GH;y++){
-    const sy=Math.min(sh-1,(y*sh/GH)|0), ro=sy*sw, wo=y*GW;
-    for(let x=0;x<GW;x++) gTmp[wo+x]=src[ro+Math.min(sw-1,(x*sw/GW)|0)];
-  }
-  // the frame border is nearly always background — use it to decide polarity
-  let border=0,bn=0,center=0,cn=0;
-  for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){
-    const v=gTmp[y*GW+x];
-    if(x<3||y<3||x>GW-4||y>GH-4){border+=v;bn++;}
-    else if(x>GW*0.35&&x<GW*0.65&&y>GH*0.35&&y<GH*0.65){center+=v;cn++;}
-  }
-  const flip=(bn&&cn&&(border/bn)>(center/cn)+0.15)!==invert;
-
-  gPrev.set(gField);
-  for(let i=0;i<GW*GH;i++) gField[i]=flip?1-gTmp[i]:gTmp[i];
-  blur(gField,3);
-  for(let i=0;i<GW*GH;i++) gDelta[i]=Math.max(gDelta[i]*0.72,Math.abs(gField[i]-gPrev[i]));
-  blur(gDelta,1);
-}
-
-function blur(a,passes){
-  for(let p=0;p<passes;p++){
-    for(let y=0;y<GH;y++){
-      const o=y*GW; let prev=a[o];
-      for(let x=0;x<GW;x++){
-        const c=a[o+x];
-        gTmp[o+x]=(prev+c+c+a[o+Math.min(GW-1,x+1)])*0.25; prev=c;
-      }
-    }
-    for(let x=0;x<GW;x++){
-      let prev=gTmp[x];
-      for(let y=0;y<GH;y++){
-        const i=y*GW+x, c=gTmp[i];
-        a[i]=(prev+c+c+gTmp[Math.min(GH-1,y+1)*GW+x])*0.25; prev=c;
-      }
-    }
-  }
-}
-
-/* ---------- fallback (model unavailable) ---------- */
-function fallbackSample(){
-  if(!fbCanvas){
-    fbCanvas=document.createElement('canvas');
-    fbCanvas.width=112;
-    fbCanvas.height=Math.round(112*(video.videoHeight||480)/(video.videoWidth||640));
-    fbCtx=fbCanvas.getContext('2d',{willReadFrequently:true});
-    fbPrev=new Float32Array(fbCanvas.width*fbCanvas.height);
-    ensureGrid(fbCanvas.width,fbCanvas.height);
-  }
-  const w=fbCanvas.width,h=fbCanvas.height;
-  fbCtx.drawImage(video,0,0,w,h);
-  const d=fbCtx.getImageData(0,0,w,h).data;
-  gPrev.set(gField);
-  for(let i=0,j=0;i<w*h;i++,j+=4){
-    const l=(d[j]*0.2126+d[j+1]*0.7152+d[j+2]*0.0722)/255;
-    const diff=Math.abs(l-fbPrev[i]); fbPrev[i]=l;
-    gField[i]=Math.max(gField[i]*0.90, diff>0.045?1:0);
-  }
-  blur(gField,3);
-  for(let i=0;i<w*h;i++) gDelta[i]=Math.max(gDelta[i]*0.72,Math.abs(gField[i]-gPrev[i]));
-  blur(gDelta,1);
-}
-
-/* ---------- mapping ---------- */
-function updateCover(){
-  const sa=innerWidth/innerHeight;
-  if(videoAspect>sa){ coverX=sa/videoAspect; coverY=1; }
-  else { coverX=1; coverY=videoAspect/sa; }
-  if(compMat){
-    compMat.uniforms.uScale.value.set(coverX,coverY);
-    compMat.uniforms.uMirror.value=mirror;
-  }
-}
-
-function fieldAt(a,x,y){
-  let u=mirror?1-x:x;
-  u=(u-0.5)*coverX+0.5;
-  const v=(y-0.5)*coverY+0.5;
-  let gx=(u*GW)|0, gy=((1-v)*GH)|0;
-  if(gx<0)gx=0; else if(gx>=GW)gx=GW-1;
-  if(gy<0)gy=0; else if(gy>=GH)gy=GH-1;
-  return a[gy*GW+gx];
-}
-
-/* ---------- particles ---------- */
-function allocParticles(){
-  px=new Float32Array(MAXN); py=new Float32Array(MAXN);
-  vx=new Float32Array(MAXN); vy=new Float32Array(MAXN);
-  pb=new Float32Array(MAXN); ph=new Float32Array(MAXN);
-  for(let i=0;i<MAXN;i++){
-    px[i]=Math.random(); py[i]=Math.random();
-    vx[i]=vy[i]=pb[i]=0; ph[i]=Math.random();
-  }
-}
-
-function buildPoints(n){
-  N=n;
-  if(geo) geo.dispose();
-  geo=new THREE.BufferGeometry();
-  posAttr=new THREE.BufferAttribute(new Float32Array(n*3),3).setUsage(THREE.DynamicDrawUsage);
-  colAttr=new THREE.BufferAttribute(new Float32Array(n*3),3).setUsage(THREE.DynamicDrawUsage);
-  sizeAttr=new THREE.BufferAttribute(new Float32Array(n),1);
-  const dpr=renderer.getPixelRatio();
-  for(let i=0;i<n;i++) sizeAttr.array[i]=(1.2+Math.random()*2.2)*dpr;
-  geo.setAttribute('position',posAttr);
-  geo.setAttribute('color',colAttr);
-  geo.setAttribute('aSize',sizeAttr);
-  if(points) scene.remove(points);
-  points=new THREE.Points(geo,new THREE.ShaderMaterial({
-    vertexShader:[
-      'attribute float aSize;','varying vec3 vCol;',
-      'void main(){ vCol=color;',
-      ' gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);',
-      ' gl_PointSize=aSize; }'].join('\n'),
-    fragmentShader:[
-      'varying vec3 vCol;',
-      'void main(){ float d=length(gl_PointCoord-0.5);',
-      ' float a=smoothstep(0.5,0.02,d); a*=a;',
-      ' gl_FragColor=vec4(vCol*a,1.0); }'].join('\n'),
-    vertexColors:true,transparent:true,depthTest:false,depthWrite:false,
-    blending:THREE.AdditiveBlending
-  }));
-  points.frustumCulled=false;
-  scene.add(points);
-}
-
-let tSec=0;
-function step(dt){
-  const P=posAttr.array,C=colAttr.array;
-  const rep=params.repel,gsh=params.gush,flw=params.flow,hueOff=params.hue;
-  const damp=Math.pow(0.90,dt*60);
-  const e=1.6/GW;
-
-  for(let i=0;i<N;i++){
-    let x=px[i],y=py[i];
-
-    const m =fieldAt(gField,x,y);
-    const gx=fieldAt(gField,x+e,y)-fieldAt(gField,x-e,y);
-    const gy=fieldAt(gField,x,y+e)-fieldAt(gField,x,y-e);
-    const gm=Math.sqrt(gx*gx+gy*gy);
-
-    if(gm>1e-5){
-      const inv=1/gm, push=rep*(0.25+m*1.6)*Math.min(gm*10,1.4);
-      vx[i]-=gx*inv*push; vy[i]-=gy*inv*push;
-    }else if(m>0.6){
-      const a=Math.random()*6.283;
-      vx[i]+=Math.cos(a)*rep*0.7; vy[i]+=Math.sin(a)*rep*0.7;
-    }
-
-    const d=fieldAt(gDelta,x,y);
-    if(d>0.02){
-      const s=Math.min(d*5,1)*gsh;
-      vx[i]+=(Math.random()-0.5)*s*1.6;
-      vy[i]+=(Math.random()*0.75+0.25)*s;
-      pb[i]+=s*26;
-    }
-
-    vx[i]+=(Math.sin(y*6.1+tSec*0.35)+Math.sin(x*4.3-tSec*0.21)*0.6)*flw*dt;
-    vy[i]+=(Math.cos(x*5.3-tSec*0.28)+Math.cos(y*3.7+tSec*0.19)*0.6)*flw*dt;
-
-    vx[i]*=damp; vy[i]*=damp;
-    const sp=Math.sqrt(vx[i]*vx[i]+vy[i]*vy[i]);
-    if(sp>0.045){const k=0.045/sp; vx[i]*=k; vy[i]*=k;}
-
-    x+=vx[i]*dt*60; y+=vy[i]*dt*60;
-    if(x<0)x+=1; else if(x>1)x-=1;
-    if(y<0)y+=1; else if(y>1)y-=1;
-    px[i]=x; py[i]=y; pb[i]*=0.93;
-
-    const o=i*3;
-    P[o]=x; P[o+1]=y; P[o+2]=0;
-
-    // hue: per-particle base, drifting slowly, shifted by height and the 色 slider
-    let h=ph[i]+hueOff+tSec*0.015+y*0.18;
-    h-=Math.floor(h);
-    const lo=(h*255|0)*3;
-    const b=pb[i], gain=0.5+Math.min(sp*26,1)*1.0+b*1.1;
-    C[o  ]=LUT[lo  ]*gain+b*0.45;
-    C[o+1]=LUT[lo+1]*gain+b*0.45;
-    C[o+2]=LUT[lo+2]*gain+b*0.45;
-  }
-  posAttr.needsUpdate=true; colAttr.needsUpdate=true;
-}
-
-/* ---------- loop ---------- */
-let last=0,fpsAcc=0,fpsN=0;
-function loop(now){
-  if(!running) return;
-  requestAnimationFrame(loop);
-  if(video.readyState<2) return;
-  const dt=Math.min(0.05,(now-last)/1000||0.016); last=now; tSec+=dt;
-
-  if(segmenter&&!useFallback){
-    try{
-      segmenter.segmentForVideo(video,now,res=>{
-        const cm=res.confidenceMasks;
-        if(cm&&cm.length){ const m=cm[cm.length-1]; ingest(m.getAsFloat32Array(),m.width,m.height); }
-        res.close();
-      });
-    }catch(err){ useFallback=true; }
-  }else fallbackSample();
-
-  if(showMask){
-    for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){
-      const sx=mirror?GW-1-x:x;
-      maskTexData[(GH-1-y)*GW+x]=gField[y*GW+sx]*255;
-    }
-    maskTex.needsUpdate=true;
-    renderer.setRenderTarget(null);
-    renderer.clear(true,false,false);
-    renderer.render(maskScene,cam);
-  }else{
-    step(dt);
-    // accumulate particles into the trail buffer
-    fadeMat.opacity=params.fade;
-    renderer.setRenderTarget(trailRT);
-    renderer.render(fadeScene,cam);
-    renderer.render(scene,cam);
-    // composite: camera image underneath, light on top
-    compMat.uniforms.uVideoAmt.value=params.vid;
-    renderer.setRenderTarget(null);
-    renderer.render(compScene,cam);
-  }
-
-  fpsAcc+=1/dt; fpsN++;
-  if(fpsN>=30){ fpsEl.textContent=Math.round(fpsAcc/fpsN)+' fps'; fpsAcc=0; fpsN=0; }
-}
-
-/* ---------- setup ---------- */
-function init(){
-  renderer=new THREE.WebGLRenderer({antialias:false,alpha:false,powerPreference:'high-performance'});
-  renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
-  renderer.setSize(innerWidth,innerHeight);
-  renderer.setClearColor(0x000000,1);
-  renderer.autoClear=false;
-  renderer.clear();
-  document.body.appendChild(renderer.domElement);
-
-  cam=new THREE.OrthographicCamera(0,1,1,0,-1,1);
-  scene=new THREE.Scene();
-
-  videoTex=new THREE.VideoTexture(video);
-  videoTex.minFilter=videoTex.magFilter=THREE.LinearFilter;
-  videoTex.format=THREE.RGBFormat;
-
-  makeTrailRT();
-
-  fadeScene=new THREE.Scene();
-  fadeMat=new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:params.fade,depthTest:false});
-  const fq=new THREE.Mesh(new THREE.PlaneGeometry(1,1),fadeMat);
-  fq.position.set(0.5,0.5,0); fq.frustumCulled=false; fadeScene.add(fq);
-
-  compMat=new THREE.ShaderMaterial({
-    uniforms:{
-      uVideo:{value:videoTex}, uTrail:{value:trailRT.texture},
-      uScale:{value:new THREE.Vector2(1,1)}, uMirror:{value:1}, uVideoAmt:{value:params.vid}
-    },
-    vertexShader:[
-      'varying vec2 vUv;',
-      'void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }'
-    ].join('\n'),
-    fragmentShader:[
-      'varying vec2 vUv;',
-      'uniform sampler2D uVideo,uTrail;',
-      'uniform vec2 uScale; uniform float uMirror,uVideoAmt;',
-      'void main(){',
-      '  vec2 uv=vUv;',
-      '  uv.x=mix(uv.x,1.0-uv.x,uMirror);',
-      '  uv=(uv-0.5)*uScale+0.5;',
-      '  vec3 v=texture2D(uVideo,uv).rgb;',
-      // pull the camera image toward grey so the coloured light stays readable on top
-      '  float l=dot(v,vec3(0.2126,0.7152,0.0722));',
-      '  v=mix(vec3(l),v,0.5)*uVideoAmt;',
-      '  vec3 t=texture2D(uTrail,vUv).rgb;',
-      '  vec3 c=v+t;',
-      '  c=c/(1.0+c*0.22);',
-      '  gl_FragColor=vec4(c,1.0); }'
-    ].join('\n'),
-    depthTest:false,depthWrite:false
-  });
-  compScene=new THREE.Scene();
-  const cq=new THREE.Mesh(new THREE.PlaneGeometry(1,1),compMat);
-  cq.position.set(0.5,0.5,0); cq.frustumCulled=false; compScene.add(cq);
-
-  maskScene=new THREE.Scene();
-  maskMesh=new THREE.Mesh(new THREE.PlaneGeometry(1,1),
-    new THREE.MeshBasicMaterial({map:maskTex||null,depthTest:false}));
-  maskMesh.position.set(0.5,0.5,0); maskMesh.frustumCulled=false; maskScene.add(maskMesh);
-
-  allocParticles();
-  buildPoints(parseInt($('count').value,10));
-  addEventListener('resize',onResize);
-  addEventListener('orientationchange',()=>setTimeout(onResize,250));
-}
-
-function makeTrailRT(){
-  const dpr=renderer.getPixelRatio();
-  const w=Math.max(2,Math.round(innerWidth*dpr)), h=Math.max(2,Math.round(innerHeight*dpr));
-  if(trailRT) trailRT.dispose();
-  trailRT=new THREE.WebGLRenderTarget(w,h,{
-    minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,
-    format:THREE.RGBAFormat,depthBuffer:false,stencilBuffer:false
-  });
-  renderer.setRenderTarget(trailRT);
-  renderer.clear(true,false,false);
-  renderer.setRenderTarget(null);
-  if(compMat) compMat.uniforms.uTrail.value=trailRT.texture;
-}
-
-function onResize(){
-  renderer.setSize(innerWidth,innerHeight);
-  makeTrailRT();
-  updateCover();
-}
-
-async function start(){
-  if(!navigator.mediaDevices?.getUserMedia){
-    fail('HTTPS（またはlocalhost）でないとカメラを使えません。GitHub Pages などに置いてから開いてください。'); return;
-  }
-  try{
-    if(!segmenter&&!useFallback){
-      try{ await loadSegmenter(); }
-      catch(e){ useFallback=true; statusEl.textContent='人物検出モデルを読めなかったので簡易モードで動かします'; }
-    }
-    if(stream) stream.getTracks().forEach(t=>t.stop());
-    stream=await navigator.mediaDevices.getUserMedia({
-      audio:false,video:{facingMode:facing,width:{ideal:640},height:{ideal:480}}
+  function reveal(picked){
+    var ok=picked===q.a;
+    buttons.forEach(function(b,i){
+      b.disabled=true;
+      if(i===q.a)b.classList.add("correct");
+      else if(i===picked)b.classList.add("wrong");
+      else b.classList.add("dim");
     });
-    video.srcObject=stream;
-    await video.play();
+    ans.hidden=false;
+    ans.innerHTML="";
+    var v=el("div","verdict "+(ok?"o":"x"));
+    v.innerHTML="<span class='mk'>"+(ok?"正解":"不正解")+"</span><span>"+(ok?"この調子で。":"正解は ("+LETTER[q.a]+")")+"</span>";
+    ans.appendChild(v);
+    ans.appendChild(el("div","exp",q.e));
+    var a=el("a","reflink");
+    a.href=q.s.u; a.target="_blank"; a.rel="noopener";
+    a.innerHTML="<span>電験王で原文を確認 ─ "+q.s.t+"</span><span class='ar'>↗</span>";
+    ans.appendChild(a);
+    wrap.classList.add("done");
+  }
 
-    mirror = facing==='user'?1:0;
-    videoAspect=(video.videoWidth||640)/(video.videoHeight||480);
-    if(!started){ started=true; init(); gate.style.display='none'; ui.style.display='flex'; bindUI(); showUI(); }
-    fbCanvas=null;
-    ensureGrid(video.videoWidth||640,video.videoHeight||480);
-    updateCover();
-    running=true; last=performance.now(); requestAnimationFrame(loop);
-  }catch(e){
-    fail('カメラを開けませんでした（'+(e?.name||'error')+'）。ブラウザ設定でカメラを許可するか、HTTPSで開き直してください。');
+  function pick(i){
+    if(state[q.id]&&!opts.drill)return;
+    state[q.id]={p:i,ok:i===q.a};
+    save();
+    reveal(i);
+    updateProgress();
+    if(opts.onAnswer)opts.onAnswer(i===q.a);
+  }
+
+  if(!opts.drill&&state[q.id])reveal(state[q.id].p);
+  return wrap;
+}
+
+/* ---------------- topics ---------------- */
+var host=document.getElementById("topics");
+TOPICS.forEach(function(t){
+  var sec=el("section","topic");
+  sec.id="t-"+t.id;
+  sec.dataset.topic=t.id;
+
+  var h=el("div","t-head");
+  h.appendChild(el("div","t-no",t.no));
+  var tt=el("div","t-tt");
+  tt.appendChild(el("h2",null,t.name));
+  var meta=el("div","t-meta");
+  meta.appendChild(el("span","tag",t.seat));
+  meta.appendChild(el("span","tag pri",t.pri));
+  var cost=el("span","cost","<span>コスパ</span>");
+  for(var i=0;i<5;i++)cost.appendChild(el("i",i<t.cost?"on":null,""));
+  meta.appendChild(cost);
+  tt.appendChild(meta);
+  h.appendChild(tt);
+  var sc=el("div","t-score");
+  sc.id="sc-"+t.id;
+  h.appendChild(sc);
+  sec.appendChild(h);
+
+  sec.appendChild(el("p","t-lead",t.lead));
+
+  var pts=el("div","pts");
+  var ph=el("div","pts-h");
+  ph.appendChild(el("span",null,"ここだけ覚える"));
+  var openAll=el("button","openall");
+  openAll.type="button";
+  openAll.textContent="解説をすべて開く";
+  ph.appendChild(openAll);
+  pts.appendChild(ph);
+
+  t.points.forEach(function(p){
+    var row=el("div","pt");
+    row.appendChild(el("div","pt-k",p.k));
+    var v=el("div","pt-v",p.v);
+    if(p.why){
+      var d=el("details","dig");
+      var sm=el("summary",null,"<span class='dig-i' aria-hidden='true'></span><span>かみくだいて理解する</span>");
+      d.appendChild(sm);
+      var inner=el("div","dig-b",p.why);
+      if(p.l&&p.l.length){
+        var lr=el("div","dig-l");
+        lr.appendChild(el("span","dig-lt","もっと詳しく"));
+        p.l.forEach(function(x){
+          var a=el("a","xl "+x.k);
+          a.href=x.u; a.target="_blank"; a.rel="noopener";
+          a.innerHTML="<span class='xb'>"+(x.k==="w"?"用語":"解説")+"</span><span>"+x.t+"</span><span class='ar'>↗</span>";
+          lr.appendChild(a);
+        });
+        inner.appendChild(lr);
+      }
+      d.appendChild(inner);
+      v.appendChild(d);
+    }
+    row.appendChild(v);
+    pts.appendChild(row);
+  });
+
+  openAll.addEventListener("click",function(){
+    var ds=pts.querySelectorAll("details.dig");
+    var anyClosed=[].some.call(ds,function(d){return !d.open;});
+    [].forEach.call(ds,function(d){d.open=anyClosed;});
+    openAll.textContent=anyClosed?"解説をすべて閉じる":"解説をすべて開く";
+  });
+  sec.appendChild(pts);
+
+  var qh=el("div","qs-h");
+  qh.appendChild(el("b",null,"過去問ベースの演習　"+t.qs.length+"問"));
+  qh.appendChild(el("hr"));
+  sec.appendChild(qh);
+
+  t.qs.forEach(function(q){ sec.appendChild(buildQ(q,{})); });
+  host.appendChild(sec);
+});
+
+/* ---------------- chips ---------------- */
+var chips=document.getElementById("chips");
+function mkChip(label,num,onclick,pressed){
+  var b=el("button","chip");
+  b.type="button";
+  b.innerHTML=(num?"<span class='cn'>"+num+"</span>":"")+"<span>"+label+"</span>";
+  b.setAttribute("aria-pressed",pressed?"true":"false");
+  b.addEventListener("click",onclick);
+  chips.appendChild(b);
+  return b;
+}
+var chipEls=[];
+var cAll=mkChip("すべて","",function(){filter("all");},true);
+chipEls.push({id:"all",el:cAll});
+TOPICS.forEach(function(t){
+  var c=mkChip(t.name,t.no,function(){filter(t.id);},false);
+  chipEls.push({id:t.id,el:c});
+});
+var cWrong=mkChip("間違えた問題だけ","!",function(){filter("wrong");},false);
+chipEls.push({id:"wrong",el:cWrong});
+
+function filter(mode){
+  chipEls.forEach(function(c){c.el.setAttribute("aria-pressed",c.id===mode?"true":"false");});
+  var secs=host.querySelectorAll(".topic");
+  Array.prototype.forEach.call(secs,function(s){
+    var tid=s.dataset.topic;
+    var showSec=(mode==="all"||mode==="wrong"||mode===tid);
+    s.style.display=showSec?"":"none";
+    var qs=s.querySelectorAll(".q");
+    var visible=0;
+    Array.prototype.forEach.call(qs,function(qe){
+      var qid=qe.id.replace(/^q-/,"");
+      var show=true;
+      if(mode==="wrong")show=!!(state[qid]&&state[qid].ok===false);
+      qe.style.display=show?"":"none";
+      if(show)visible++;
+    });
+    var pts=s.querySelector(".pts"), lead=s.querySelector(".t-lead"), qh=s.querySelector(".qs-h");
+    var hideSummary=(mode==="wrong");
+    if(pts)pts.style.display=hideSummary?"none":"";
+    if(lead)lead.style.display=hideSummary?"none":"";
+    if(qh)qh.style.display=hideSummary?"none":"";
+    if(mode==="wrong"&&visible===0)s.style.display="none";
+  });
+  if(mode!=="all"){
+    var target=(mode==="wrong")?null:document.getElementById("t-"+mode);
+    window.scrollTo({top:target?target.offsetTop-100:0,behavior:"smooth"});
   }
 }
-function fail(m){ errEl.textContent=m; errEl.style.display='block'; statusEl.textContent=''; }
 
-/* ---------- ui ---------- */
-let hideTimer=null;
-function showUI(){ ui.classList.remove('hidden'); clearTimeout(hideTimer);
-  hideTimer=setTimeout(()=>ui.classList.add('hidden'),5000); }
-
-function bindUI(){
-  const on=(id,fn)=>$(id).addEventListener('input',e=>{fn(parseFloat(e.target.value));showUI();});
-  on('vid',  v=>params.vid=v);
-  on('repel',v=>params.repel=v);
-  on('gush', v=>params.gush=v);
-  on('fade', v=>params.fade=v);
-  on('hue',  v=>params.hue=v);
-  $('count').addEventListener('change',e=>{buildPoints(parseInt(e.target.value,10));showUI();});
-
-  const maskBtn=$('maskBtn');
-  maskBtn.addEventListener('click',()=>{
-    showMask=!showMask; maskBtn.classList.toggle('on',showMask);
-    maskBtn.textContent=showMask?'粒にもどす':'判定を見る'; showUI();
-  });
-  const invBtn=$('invBtn');
-  invBtn.addEventListener('click',()=>{invert=!invert; invBtn.classList.toggle('on',invert); showUI();});
-  $('camBtn').addEventListener('click',()=>{
-    facing=facing==='user'?'environment':'user'; running=false; start(); showUI();
-  });
-  $('fsBtn').addEventListener('click',()=>{
-    const el=document.documentElement;
-    if(!document.fullscreenElement&&!document.webkitFullscreenElement)
-      (el.requestFullscreen||el.webkitRequestFullscreen||(()=>{})).call(el);
-    else (document.exitFullscreen||document.webkitExitFullscreen||(()=>{})).call(document);
-    showUI();
-  });
-  renderer.domElement.addEventListener('pointerdown',showUI);
-  document.addEventListener('visibilitychange',()=>{
-    if(document.hidden) running=false;
-    else if(started&&stream){ running=true; last=performance.now(); requestAnimationFrame(loop); }
+/* ---------------- progress ---------------- */
+function updateProgress(){
+  var done=0,ok=0;
+  ALL.forEach(function(q){ if(state[q.id]){done++; if(state[q.id].ok)ok++;} });
+  document.getElementById("gtxt").textContent=ok+"/"+ALL.length;
+  document.getElementById("gfill").style.width=(ALL.length?(ok/ALL.length*100):0)+"%";
+  TOPICS.forEach(function(t){
+    var d=0,o=0;
+    t.qs.forEach(function(q){ if(state[q.id]){d++; if(state[q.id].ok)o++;} });
+    var e=document.getElementById("sc-"+t.id);
+    if(e)e.textContent=d?(o+"/"+t.qs.length):"";
   });
 }
+updateProgress();
 
-$('startBtn').addEventListener('click',start);
+/* ---------------- theme ---------------- */
+var tKey="denken3-theme";
+var saved=null;
+try{saved=localStorage.getItem(tKey);}catch(e){}
+if(saved)document.documentElement.setAttribute("data-theme",saved);
+document.getElementById("themeBtn").addEventListener("click",function(){
+  var cur=document.documentElement.getAttribute("data-theme");
+  var isDark=cur?cur==="dark":window.matchMedia("(prefers-color-scheme: dark)").matches;
+  var next=isDark?"light":"dark";
+  document.documentElement.setAttribute("data-theme",next);
+  try{localStorage.setItem(tKey,next);}catch(e){}
+});
+
+/* ---------------- drill ---------------- */
+var drill=document.getElementById("drill"),dBody=document.getElementById("dBody"),
+    dNext=document.getElementById("dNext"),dCount=document.getElementById("dCount");
+var dQs=[],dIdx=0,dLog=[];
+
+function pickSet(n){
+  var never=[],wrong=[],right=[];
+  ALL.forEach(function(q){
+    if(!state[q.id])never.push(q);
+    else if(!state[q.id].ok)wrong.push(q);
+    else right.push(q);
+  });
+  function sh(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+  var pool=sh(wrong).concat(sh(never)).concat(sh(right));
+  return pool.slice(0,Math.min(n,pool.length));
+}
+
+function showDrillQ(){
+  dBody.innerHTML="";
+  dCount.textContent=(dIdx+1)+" / "+dQs.length;
+  dNext.disabled=true;
+  dNext.textContent="選択してください";
+  var q=dQs[dIdx];
+  dBody.appendChild(buildQ(q,{drill:true,onAnswer:function(ok){
+    dLog.push({q:q,ok:ok});
+    dNext.disabled=false;
+    dNext.textContent=(dIdx+1<dQs.length)?"次の問題へ":"結果を見る";
+    dNext.focus();
+  }}));
+  dBody.scrollIntoView({block:"start"});
+  drill.scrollTop=0;
+}
+
+function showResult(){
+  dCount.textContent="結果";
+  var ok=dLog.filter(function(l){return l.ok;}).length;
+  dBody.innerHTML="";
+  var r=el("div","result");
+  r.appendChild(el("div","big",ok+" / "+dLog.length));
+  var msg = ok===dLog.length ? "全問正解。この分野は仕上がりつつあります。"
+          : ok>=dLog.length*0.7 ? "合格ラインの手応え。間違えた論点だけ戻って読み直しを。"
+          : "いまは取りこぼしを見つける段階。下の×の解説を読んでからもう一度回してください。";
+  r.appendChild(el("div","cap",msg));
+  var list=el("div","rlist");
+  dLog.forEach(function(l){
+    var row=el("div","rrow "+(l.ok?"o":"x"));
+    row.innerHTML="<span class='mk'>"+(l.ok?"○":"×")+"</span><span>"+l.q.topic.name+" ─ "+l.q.q.slice(0,42)+(l.q.q.length>42?"…":"")+"</span>";
+    list.appendChild(row);
+  });
+  r.appendChild(list);
+  dBody.appendChild(r);
+  dNext.disabled=false;
+  dNext.textContent="閉じる";
+  dNext.onclick=closeDrill;
+}
+
+function closeDrill(){
+  drill.classList.remove("on");
+  document.body.style.overflow="";
+  dNext.onclick=nextHandler;
+  updateProgress();
+}
+function nextHandler(){
+  if(dIdx+1<dQs.length){dIdx++;showDrillQ();}
+  else showResult();
+}
+dNext.onclick=nextHandler;
+
+document.getElementById("startDrill").addEventListener("click",function(){
+  dQs=pickSet(10); dIdx=0; dLog=[];
+  if(!dQs.length)return;
+  drill.classList.add("on");
+  document.body.style.overflow="hidden";
+  dNext.onclick=nextHandler;
+  showDrillQ();
+});
+document.getElementById("dClose").addEventListener("click",closeDrill);
+document.addEventListener("keydown",function(e){ if(e.key==="Escape"&&drill.classList.contains("on"))closeDrill(); });
+
+document.getElementById("resetBtn").addEventListener("click",function(){
+  state={};save();
+  document.querySelectorAll(".q").forEach(function(qe){
+    qe.classList.remove("done");
+    qe.querySelectorAll(".opt").forEach(function(b){b.disabled=false;b.classList.remove("correct","wrong","dim");});
+    var a=qe.querySelector(".ans"); if(a){a.hidden=true;a.innerHTML="";}
+  });
+  updateProgress();
+  filter("all");
+});
 </script>
 </body>
 </html>
